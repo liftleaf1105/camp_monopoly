@@ -37,16 +37,12 @@ const Transfer = () => {
 
   const [count, setCount] = useState(-1);
 
-  const [discount, setDiscount] = useState(1);
-
   const [finalData, setFinalData] = useState({});
 
   const [amount, setAmount] = useState(0);
 
   const [errorMessage, setErrorMessage] = useState("");
-  const [errorMessage0, setErrorMessage0] = useState("");
   const [error, setError] = useState(false);
-  const [error0, setError0] = useState(false);
   const { roleId, filteredBuildings, setNavBarId } = useContext(RoleContext);
   const navigate = useNavigate();
 
@@ -57,80 +53,80 @@ const Transfer = () => {
     setFrom(from);
   };
 
-  // const handleDiscount = async (from) => {
-  //   // const { data } = await axios.get("/team/" + from);
-  //   // // console.log(data);
-  //   // setFromData(data);
-  //   // setFrom(from);
+  const handleDiscount = async (from) => {
+    // const { data } = await axios.get("/team/" + from);
+    // // console.log(data);
+    // setFromData(data);
+    // setFrom(from);
 
-  //   // console.log(fromData.resources.love);
+    // console.log(fromData.resources.love);
 
-  //   if(fromData.resources.love === 0) {
-  //     setErrorMessage("No love, No discount");
-  //   }
-  //   else if(fromData.resources.love === 1) {
-  //     setAmount(amount * 0.95);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love === 2) {
-  //     setAmount(amount * 0.925);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love === 3) {
-  //     setAmount(amount * 0.9);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love === 4) {
-  //     setAmount(amount * 0.875);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love === 5) {
-  //     setAmount(amount * 0.85);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love === 6) {
-  //     setAmount(amount * 0.835);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love === 7) {
-  //     setAmount(amount * 0.82);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love >= 8) {
-  //     setAmount(amount * 0.805);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love >= 9) {
-  //     setAmount(amount * 0.79);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love >= 10) {
-  //     setAmount(amount * 0.775);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love >= 11) {
-  //     setAmount(amount * 0.76);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love >= 12) {
-  //     setAmount(amount * 0.745);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love >= 13) {
-  //     setAmount(amount * 0.73);
-  //     setErrorMessage("Discounted");
-  //   }
-  //   else if(fromData.resources.love >= 14) {
-  //     setAmount(amount * 0.715);
-  //     setErrorMessage("Discounted");
-  //   }else if(fromData.resources.love >= 15) {
-  //     setAmount(amount * 0.7);
-  //     setErrorMessage("Discounted");
-  //   }
+    if(fromData.resources.love === 0) {
+      setErrorMessage("No love, No discount");
+    }
+    else if(fromData.resources.love === 1) {
+      setAmount(amount * 0.95);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love === 2) {
+      setAmount(amount * 0.925);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love === 3) {
+      setAmount(amount * 0.9);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love === 4) {
+      setAmount(amount * 0.875);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love === 5) {
+      setAmount(amount * 0.85);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love === 6) {
+      setAmount(amount * 0.835);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love === 7) {
+      setAmount(amount * 0.82);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love >= 8) {
+      setAmount(amount * 0.805);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love >= 9) {
+      setAmount(amount * 0.79);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love >= 10) {
+      setAmount(amount * 0.775);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love >= 11) {
+      setAmount(amount * 0.76);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love >= 12) {
+      setAmount(amount * 0.745);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love >= 13) {
+      setAmount(amount * 0.73);
+      setErrorMessage("Discounted");
+    }
+    else if(fromData.resources.love >= 14) {
+      setAmount(amount * 0.715);
+      setErrorMessage("Discounted");
+    }else if(fromData.resources.love >= 15) {
+      setAmount(amount * 0.7);
+      setErrorMessage("Discounted");
+    }
 
 
-  //   console.log(amount);
-  // };
+    console.log(amount);
+  };
 
   const handleTo = async (to, newBuildingData) => {
     const { data: toData } = await axios.get("/team/" + to);
@@ -183,10 +179,6 @@ const Transfer = () => {
     setNavBarId(2);
   };
 
-  const handleDiscount = () => {
-    setAmount(amount * discount);
-  }
-
   const handleBuilding = async (building) => {
     if (building > 0) {
       const { data } = await axios.get("/land/" + building);
@@ -227,20 +219,20 @@ const Transfer = () => {
     }
   };
 
-  // const handlePercentMoney = async (percent) => {
-  //   // const money = fromData.money; //find the team's money
-  //   const { data } = await axios.get("/getRent", {
-  //     params: { building: building },
-  //   });
-  //   setAmount(Math.round(data * (1 + percent)));
-  // };
+  const handlePercentMoney = async (percent) => {
+    // const money = fromData.money; //find the team's money
+    const { data } = await axios.get("/getRent", {
+      params: { building: building },
+    });
+    setAmount(Math.round(data * (1 + percent)));
+  };
 
-  // const handleEqualMoney = () => {
-  //   let money_from = fromData.money; //first team (using the card)
-  //   let money_to = toData.money; //second team(passive)
-  //   let temp = Math.round((money_from - money_to) / 2);
-  //   setAmount(temp);
-  // };
+  const handleEqualMoney = () => {
+    let money_from = fromData.money; //first team (using the card)
+    let money_to = toData.money; //second team(passive)
+    let temp = Math.round((money_from - money_to) / 2);
+    setAmount(temp);
+  };
 
   useEffect(() => {
     if (roleId < 10) {
@@ -452,7 +444,6 @@ const Transfer = () => {
               setEqual(false);
             }}
           /> */}
-
           <TextField
             required
             error={error}
@@ -473,49 +464,6 @@ const Transfer = () => {
             helperText={errorMessage}
             FormHelperTextProps={{ error: true }}
           />
-
-          {/* <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginTop: 1,
-              width: "100%",
-            }}
-          >
-            <TextField
-              required
-              error={error0}
-              label="discount"
-              id="discount"
-              value={discount}
-              onChange={(e) => {
-                const re = /^\d*\.?\d*$/;
-                if (e.target.value === "" || re.test(e.target.value)) {
-                  setDiscount(e.target.value ? e.target.value : "");
-                  setErrorMessage0("");
-                  setError0(false);
-                } else {
-                  setErrorMessage0("Please enter a valid number");
-                  setError0(true);
-                }
-              }}
-              helperText={errorMessage0}
-              FormHelperTextProps={{ error: true }}
-            />
-
-            <Button
-              variant="contained"
-              disabled={amount === 0 || discount === 1}
-              onClick={handleDiscount}
-              fullWidth
-              fullHeight
-              sx={{ marginLeft: 1 }}
-            >
-              discount
-            </Button>
-          </Box> */}
-
           <Box
             sx={{
               display: "flex",
@@ -556,7 +504,7 @@ const Transfer = () => {
           >
             Submit
           </Button> */}
-          {/* <Button
+          <Button
             variant="contained"
             disabled={amount === 0 || from === to}
             onClick={handleDiscount}
@@ -564,7 +512,7 @@ const Transfer = () => {
             sx={{ marginTop: 0 }}
           >
             love discount
-          </Button> */}
+          </Button>
 
           <Button
             variant="contained"

@@ -26,7 +26,15 @@ const Map = () => {
           }}
         />
         <img
-          src="/playground.jpg"
+          src="/B1.jpg"
+          alt="Map"
+          style={{
+            maxWidth: "100%",
+            userSelect: "none",
+          }}
+        />
+        <img
+          src="/2F.jpg"
           alt="Map"
           style={{
             maxWidth: "100%",

@@ -140,7 +140,7 @@ const SetOwnership = () => {
                 setLevel(e.target.value);
               }}
             >
-              {/* <MenuItem value={0}>0</MenuItem> */}
+              <MenuItem value={0}>0</MenuItem>
               <MenuItem value={1}>1</MenuItem>
               <MenuItem value={2}>2</MenuItem>
               <MenuItem value={3}>3</MenuItem>
@@ -162,7 +162,7 @@ const SetOwnership = () => {
             </Button> */}
             <Button
               variant="contained"
-              disabled={team === -1 || building === -1 }
+              disabled={team === -1 || building === -1}
               onClick={handleClick}
               fullWidth
               sx={{ marginTop: 2 }}

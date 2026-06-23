@@ -354,20 +354,34 @@ router.post("/controlResource", async (req, res) => {
   const team = await Team.collection.findOne({ id: teamId });
 
   if (mode === 0) {//-
-    if(resourceId == 0){ //布萊德彼特幣
+    if(resourceId == 0){ //love
+      await Team.findOneAndUpdate(
+        { id: teamId },
+        { 
+          resources: { love : team.resources.love - number, eecoin : team.resources.eecoin },
+        }
+      );
+    }else if(resourceId == 1){ //eecoin
       await Team.findOneAndUpdate(
         { id: teamId },
         {
-          resources: {eecoin : Number(team.resources.eecoin) - Number(number)},
+          resources: {love : team.resources.love, eecoin : team.resources.eecoin - number},
         }
       );
     }
   } else if (mode === 1) {//+
-    if(resourceId == 0){//布萊德彼特幣
+    if(resourceId == 0){
+      await Team.findOneAndUpdate(//love
+        { id: teamId },
+        {
+          resources: { love: team.resources.love + number, eecoin: team.resources.eecoin },
+        }
+      );
+    }else if(resourceId == 1){//eecoin
       await Team.findOneAndUpdate(
         { id: teamId },
         {
-          resources: { eecoin: Number(team.resources.eecoin) + Number(number) },
+          resources: { love: team.resources.love, eecoin: team.resources.eecoin + number },
         }
       );
     }
@@ -396,21 +410,37 @@ router.post("/sellResource", async (req, res) => {
   const resource = await Resource.collection.findOne({ id: resourceId });
 
   if (mode === 0) {//sell
-    if(resourceId == 0){ //eecoin
+    if(resourceId == 0){ //love
+      await Team.findOneAndUpdate(
+        { id: teamId },
+        { 
+          resources: { love : team.resources.love - number, eecoin : team.resources.eecoin },
+          money: team.money + resource.price * number
+        }
+      );
+    }else if(resourceId == 1){ //eecoin
       await Team.findOneAndUpdate(
         { id: teamId },
         {
-          resources: {eecoin : team.resources.eecoin - number},
+          resources: {love : team.resources.love, eecoin : team.resources.eecoin - number},
           money: team.money + resource.price * number
         }
       );
     }
   } else if (mode === 1) {//buy
-    if(resourceId == 0){//eecoin
+    if(resourceId == 0){
+      await Team.findOneAndUpdate(//love
+        { id: teamId },
+        {
+          resources: { love: Number(team.resources.love) + Number(number), eecoin: team.resources.eecoin },
+          money: team.money - resource.price * number,
+        }
+      );
+    }else if(resourceId == 1){//eecoin
       await Team.findOneAndUpdate(
         { id: teamId },
         {
-          resources: {eecoin: Number(team.resources.eecoin) + Number(number) },
+          resources: { love: team.resources.love, eecoin: Number(team.resources.eecoin) + Number(number) },
           money: team.money - resource.price * number,
         }
       );
@@ -477,74 +507,10 @@ router.post("/sell", async (req, res) => {
   res.status(200).json({ message: "Sell successful" });
 });
 
-router.post("/bankTransfer", async (req, res) => {
-  const {targetTeam, dollar} = req.body;
-  const team = await Team.findOne({
-    id: targetTeam
-  });
-
-  team.money -= dollar;
-  team.bank += dollar;
-  await team.save();
-
-  res.json("Success").status(200);
-});
-
-router.post ("/bankControl", async (req, res) => {
-  const {targetTeam, dollar} = req.body;
-  const team = await Team.findOne({
-    id: targetTeam
-  });
-
-  team.bank += dollar;
-  await team.save();
-
-  res.json("Success").status(200);
-});
-
-router.post("/interest", async(req, res) => {
-  const {rate} = req.body;
-  const teams = await Team.find();
-
-  for (let i = 0; i < teams.length; i++) {
-    teams[i].bank = Math.round(teams[i].bank * Number(rate));
-    await teams[i].save();
-
-    console.log(`team ${teams[i].teamname} bank: ${teams[i].bank}`);
-  }
-
-  res.json("Success").status(200);
-});
-
 router.get("/allEvents", async (req, res) => {
   const events = await Event.find().sort({ id: 1 });
   res.json(events).status(200);
 });
-
-router.post("/reset", async(req, res) =>{
-  console.log("RESET");
-
-  //reset everything
-  const teams = await Team.find();
-  const resources = await Resource.find();
-
-  for(let i = 0; i < teams.length; i++) {
-    teams[i].money = 40000;
-    teams[i].bank = 0;
-    teams[i].resources.eecoin = 0;
-    await teams[i].save();
-  }
-
-  resources[0].price = 10000;
-
-  const lands = await Land.find();
-  //set all lands to 0
-  for(let i = 0; i < lands.length; i++) {
-    lands[i].owner = 0;
-    lands[i].level = 0;
-    await lands[i].save();
-  }
-})
 
 router
   .post("/event", async (req, res) => {
@@ -565,115 +531,22 @@ router
           break;
         case 1: // 山賊入侵，各組金錢減少30%。
           {
-            const resources = await Resource.find();
-            //update all resources price
-            resources[0].price = Number(15000);
-            //save the update
-            await resources[0].save();
-
-            console.log("event 1");
-
-            res.json("Success").status(200);
-          }
-          break;
-
-        case 2:
-          {
-            const resources = await Resource.find();
-            //update all resources price
-            resources[0].price = Number(30000);
-            await resources[0].save();
-
-            res.json("Success").status(200);
-          }
-          break;
-
-        case 3:
-          {
-            const resources = await Resource.find();
-            //update all resources price
-            resources[0].price = Number(1000);
-            await resources[0].save();
-
-            res.json("Success").status(200);
-          }
-          break;
-
-        case 4:
-          {
-            const resources = await Resource.find();
-            //update all resources price
-            resources[0].price = Number(2000);
-            await resources[0].save();
-
             const teams = await Team.find();
-
-            for(let i = 0; i < teams.length; i++) {
-              teams[i].bank = 0;
+            for (let i = 0; i < teams.length; i++) {
+              teams[i].money  = teams[i].money * 0.7;
               await teams[i].save();
             }
-
             res.json("Success").status(200);
           }
           break;
-
-        case 5:
-          {
-            const resources = await Resource.find();
-            //update all resources price
-            resources[0].price = Number(3000);
-            await resources[0].save();
-
-            res.json("Success").status(200);
-          }
-          break;
-
         case 6: // 屠魔令，所有資源減少50%
           {
-            const resources = await Resource.find();
-            //update all resources price
-            resources[0].price = Number(18000);
-            await resources[0].save();
-
-            res.json("Success").status(200);
-          }
-          break;
-        case 7:
-          {
-            const resources = await Resource.find();
-            //update all resources price
-            resources[0].price = Number(16000);
-            await resources[0].save();
-
             const teams = await Team.find();
-
             for (let i = 0; i < teams.length; i++) {
-              teams[i].money = Math.round(teams[i].money * 0.5);
+              teams[i].resources.eecoin = Math.round(teams[i].resources.eecoin * 0.5);
+              teams[i].resources.love = Math.round(teams[i].resources.love * 0.5);
               await teams[i].save();
             }
-
-            res.json("Success").status(200);
-          }
-          break;
-        case 8:
-          {
-            const resources = await Resource.find();
-            //update all resources price
-            resources[0].price = Number(1000);
-            await resources[0].save();
-
-            //For each land the team owns, reduce the money by 5000
-            const lands = await Land.find();
-            for (let i = 0; i < lands.length; i++) {
-              console.log(`land ${lands[i].id} owner: ${lands[i].owner}`);
-
-              if (lands[i].owner !== 0 && lands[i].level > 1) {
-                const team = await Team.findOne({ id: lands[i].owner });
-                team.money -= 5000 * (lands[i].level - 1);
-                await team.save();
-              }
-            }
-
             res.json("Success").status(200);
           }
           break;
