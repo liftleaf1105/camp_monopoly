@@ -11,6 +11,7 @@ import MapIcon from "@mui/icons-material/Map";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 import CalculateIcon from '@mui/icons-material/Calculate';
+import CollectionsIcon from "@mui/icons-material/Collections";
 
 export const NavBarItems = [
   {
@@ -40,6 +41,13 @@ export const NavBarItems = [
     label: "Game Map",
     shortLabel: "Map",
     route: "map",
+  },
+  {
+    id: 17,
+    icon: <CollectionsIcon />,
+    label: "Stage Display",
+    shortLabel: "Display",
+    route: "stage-display",
   },
   {
     id: 11,
