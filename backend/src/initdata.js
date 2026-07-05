@@ -201,7 +201,7 @@ const resources = [
   // },
   {
     id: 0,
-    name: "布萊德彼特幣",
+    name: "贖罪券",
     price: 10000
   },
 ]
@@ -488,7 +488,7 @@ const events = [
   {
     id: 3,
     title: "馬斯克發廢文",
-    description: "布萊德彼特幣暴跌",
+    description: "贖罪券暴跌",
   },
   {
     id: 4,

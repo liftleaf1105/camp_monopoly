@@ -16,7 +16,7 @@ const BroadcastAlert = () => {
     socket.on("broadcast", (args) => {
       // console.log(args.level, roleId);
       // console.log(args);
-      if (roleId >= (args.level || 0)) {
+      if (roleId > (args.level || 0)) {
         setOpen(true);
         setMessage(args);
         console.log("broadcast", args);

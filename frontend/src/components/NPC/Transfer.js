@@ -49,6 +49,11 @@ const Transfer = () => {
   const [error0, setError0] = useState(false);
   const { roleId, filteredBuildings, setNavBarId } = useContext(RoleContext);
   const navigate = useNavigate();
+  const wrongOwner =
+    building !== -1 &&
+    to !== -1 &&
+    buildingData.owner !== undefined &&
+    Number(to) !== Number(buildingData.owner);
 
   const handleFrom = async (from) => {
     const { data } = await axios.get("/team/" + from);
@@ -145,25 +150,34 @@ const Transfer = () => {
     // console.log(buildingData);
     // if (buildingData === null) return;
     const data = newBuildingData !== undefined ? newBuildingData : buildingData;
-    if (to !== data.owner && data.id !== data.hawkEye) {
+    const hasHawkEye =
+      Number(data.hawkEye) > 0 && Number(data.id) !== Number(data.hawkEye);
+    if (Number(to) !== Number(data.owner) && hasHawkEye) {
       const res = await axios.get("/land/" + data.hawkEye);
-      console.log(res.data);
-      setAmount(Math.round(0.4 * res.data.rent[res.data.level - 1]));
-      setErrorMessage("Auto Fill Hawk Eye");
+      if (res.data?.rent) {
+        console.log(res.data);
+        setAmount(Math.round(0.4 * res.data.rent[res.data.level - 1]));
+        setErrorMessage("Auto Fill Hawk Eye");
+      }
     }
   };
 
   const FetchFinal = async () => {
-    const { data } = await axios.get("/transfer", {
-      params: {
-        from: from,
-        to: to,
-        IsEstate: building !== -1,
-        dollar: parseInt(amount),
-      },
-    });
-    console.log(data);
-    setFinalData(data);
+    try {
+      const { data } = await axios.get("/transfer", {
+        params: {
+          from: from,
+          to: to,
+          IsEstate: building !== -1,
+          dollar: parseInt(amount),
+        },
+      });
+      console.log(data);
+      setFinalData(data);
+    } catch (err) {
+      console.error(err);
+      setFinalData({});
+    }
   };
 
   const handleClick = async () => {
@@ -258,10 +272,17 @@ const Transfer = () => {
   }, [roleId]);
 
   useEffect(() => {
-    if (from !== -1 && to !== -1 && amount !== 0 && from !== to) {
+    if (
+      from !== -1 &&
+      to !== -1 &&
+      from !== to &&
+      amount !== "" &&
+      Number(amount) !== 0 &&
+      !error
+    ) {
       FetchFinal();
     }
-  }, [from, to, amount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [from, to, amount, error]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const PreviewBuilding = () => {
     return (
@@ -411,6 +432,11 @@ const Transfer = () => {
             hasZero={false}
             sx={{ marginBottom: 2 }}
           />
+          {wrongOwner ? (
+            <Typography color="warning.main" variant="body2" sx={{ mt: 0.5 }}>
+              Wrong owner!
+            </Typography>
+          ) : null}
         </FormControl>
 
         {/* <FormControl
@@ -568,7 +594,15 @@ const Transfer = () => {
 
           <Button
             variant="contained"
-            disabled={!(from && to && amount) || from === to}
+            disabled={
+              from === -1 ||
+              to === -1 ||
+              from === to ||
+              wrongOwner ||
+              amount === "" ||
+              Number(amount) === 0 ||
+              error
+            }
             onClick={handleClick}
             fullWidth
             sx={{ marginTop: 1 }}

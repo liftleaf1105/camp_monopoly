@@ -58,9 +58,9 @@ const Random = () => {
     setOtherTeam(data.owner);
   };
 
-  const handleAquire = async () => {
+  const handleAcquire = async () => {
     const payload = { land: buildingData.name, teamId: team };
-    await axios.post("/aquire", payload);
+    await axios.post("/acquire", payload);
     setOpen(true);
     navigate("/properties?id=" + buildingData.id);
     setNavBarId(3);
@@ -186,7 +186,7 @@ const Random = () => {
                 <Button
                   variant="contained"
                   disabled={mode === -1}
-                  onClick={handleAquire}
+                  onClick={handleAcquire}
                   fullWidth
                   sx={{ marginTop: 2 }}
                 >

@@ -354,7 +354,7 @@ router.post("/controlResource", async (req, res) => {
   const team = await Team.collection.findOne({ id: teamId });
 
   if (mode === 0) {//-
-    if(resourceId == 0){ //布萊德彼特幣
+    if(resourceId == 0){ //贖罪券
       await Team.findOneAndUpdate(
         { id: teamId },
         {
@@ -363,7 +363,7 @@ router.post("/controlResource", async (req, res) => {
       );
     }
   } else if (mode === 1) {//+
-    if(resourceId == 0){//布萊德彼特幣
+    if(resourceId == 0){//贖罪券
       await Team.findOneAndUpdate(
         { id: teamId },
         {
@@ -1040,7 +1040,32 @@ router.post("/handleDeBuff", async (req, res) => {
   res.json("Success").status(200);
 });
 
+const normalizeTransferPayload = ({ from, to, dollar, IsEstate }) => {
+  const payload = {
+    from: Number(from),
+    to: Number(to),
+    dollar: Number(dollar),
+    IsEstate: IsEstate === true || IsEstate === "true",
+  };
+
+  if (
+    !Number.isFinite(payload.from) ||
+    !Number.isFinite(payload.to) ||
+    !Number.isFinite(payload.dollar)
+  ) {
+    return null;
+  }
+
+  return payload;
+};
+
 const calcTransfer = async (from, to, amount, isEstate) => {
+  from = Number(from);
+  to = Number(to);
+  amount = Number(amount);
+
+  if (!Number.isFinite(from) || !Number.isFinite(to) || !Number.isFinite(amount))
+    return null;
   if (from === to) return null;
 
   const FromTeam = await Team.findOne({ id: from }); //minus
@@ -1050,19 +1075,19 @@ const calcTransfer = async (from, to, amount, isEstate) => {
     return null;
   }
 
-  var FromAmount = parseInt(FromTeam.money);
-  var ToAmount = parseInt(ToTeam.money);
-  var TransferAmount = parseInt(amount);
-  console.log(TransferAmount, ToTeam.bonus.value);
-  if (isEstate && ToTeam.bonus.value !== 0)
-    TransferAmount *= ToTeam.bonus.value;
+  var FromAmount = Number(FromTeam.money);
+  var ToAmount = Number(ToTeam.money);
+  var TransferAmount = Number(amount);
+  const bonusValue = Number(ToTeam.bonus?.value ?? 1);
+  console.log(TransferAmount, bonusValue);
+  if (isEstate && bonusValue !== 0) TransferAmount *= bonusValue;
 
   console.log(TransferAmount);
-  if (FromTeam.soulgem.value)
+  if (FromTeam.soulgem?.value)
     FromAmount -= parseInt(Math.round(TransferAmount * 1.5));
   else FromAmount -= TransferAmount;
 
-  if (ToTeam.soulgem.value)
+  if (ToTeam.soulgem?.value)
     ToAmount += parseInt(Math.round(TransferAmount * 2));
   else ToAmount += TransferAmount;
   console.log({ from: FromAmount, to: ToAmount });
@@ -1070,7 +1095,10 @@ const calcTransfer = async (from, to, amount, isEstate) => {
 };
 
 router.post("/transfer", async (req, res) => {
-  const { from, to, IsEstate, dollar } = req.body;
+  const payload = normalizeTransferPayload(req.body);
+  if (!payload) return res.status(400).send("Invalid transfer payload");
+
+  const { from, to, IsEstate, dollar } = payload;
   //update team status
   await Team.findAndCheckValid(from);
   await Team.findAndCheckValid(to);
@@ -1078,7 +1106,7 @@ router.post("/transfer", async (req, res) => {
   const data = await calcTransfer(from, to, dollar, IsEstate);
   if (!data) {
     console.log("Transfer failed");
-    res.status(403).send("Transfer failed");
+    return res.status(403).send("Transfer failed");
   } else {
     await Team.findOneAndUpdate({ id: from }, { money: data.from });
     await Team.findOneAndUpdate({ id: to }, { money: data.to });
@@ -1089,10 +1117,10 @@ router.post("/transfer", async (req, res) => {
 });
 
 router.get("/transfer", async (req, res) => {
-  let from = req.query.from;
-  let to = req.query.to;
-  let IsEstate = req.query.IsEstate;
-  let dollar = req.query.dollar;
+  const payload = normalizeTransferPayload(req.query);
+  if (!payload) return res.status(400).send("Invalid transfer payload");
+
+  let { from, to, IsEstate, dollar } = payload;
   const data = await calcTransfer(from, to, dollar, IsEstate);
   console.log(data);
   if (data !== null) res.json(data).status(200);
@@ -1182,7 +1210,7 @@ router.post("/calcbonus", async (req, res) => {
   res.json("Success").status(200);
 });
 
-router.post("/aquire", async (req, res) => {
+router.post("/acquire", async (req, res) => {
   const { land, teamId } = req.body;
   const target = await Land.find({ name: land });
   const originOwner = target[0].owner;
@@ -1200,7 +1228,7 @@ router.post("/aquire", async (req, res) => {
   res.json("Success").status(200);
 });
 
-router.get("/aquireBuilding", async (req, res) => {
+router.get("/acquireBuilding", async (req, res) => {
   const targetBuilding = Land.find({ type: "Building" }).sort({ id: 1 });
   res.json(targetBuilding).status(200);
 });
