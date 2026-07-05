@@ -11,6 +11,7 @@ import {
   Box,
   Button,
   FormControl,
+  FormHelperText,
   TableContainer,
   TableBody,
   TableRow,
@@ -435,9 +436,7 @@ const Transfer = () => {
             sx={{ marginBottom: 2 }}
           />
           {wrongOwner ? (
-            <Typography color="warning.main" variant="body2" sx={{ mt: 0.5 }}>
-              Wrong owner!
-            </Typography>
+            <FormHelperText error={true}>Wrong owner!</FormHelperText>
           ) : null}
         </FormControl>
 
