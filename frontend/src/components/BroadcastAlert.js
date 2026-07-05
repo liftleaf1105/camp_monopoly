@@ -6,37 +6,71 @@ import RoleContext from "./useRole";
 const BroadcastAlert = () => {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState({});
-  const { roleId, setPhase } = useContext(RoleContext);
+  const [queue, setQueue] = useState([]);
+  const { role, roleId, setPhase } = useContext(RoleContext);
 
   const handleClose = (event, reason) => {
+    if (reason === "clickaway") return;
     setOpen(false);
   };
 
   useEffect(() => {
-    socket.on("broadcast", (args) => {
+    if (!open && queue.length > 0) {
+      setMessage(queue[0]);
+      setQueue((messages) => messages.slice(1));
+      setOpen(true);
+    }
+  }, [open, queue]);
+
+  useEffect(() => {
+    const viewerLevel = Number(roleId) || 0;
+    const currentTeamId =
+      viewerLevel ||
+      Number(String(role).match(/(?:team|第)(\d{1,2})/i)?.[1]);
+    const broadcastLevel = currentTeamId || viewerLevel;
+
+    const handleBroadcast = (args) => {
       // console.log(args.level, roleId);
       // console.log(args);
-      if (roleId > (args.level || 0)) {
-        setOpen(true);
-        setMessage(args);
-        console.log("broadcast", args);
-      }
-    });
+      const isTargeted = args.targetTeamId !== undefined;
+      const shouldShow = isTargeted
+        ? currentTeamId === Number(args.targetTeamId)
+        : broadcastLevel >= Number(args.level || 0);
 
-    socket.on("phase", (phase) => {
-      setOpen(true);
-      setMessage({
-        title: `Phase Changed to ${phase}`,
-        description: "",
-      });
+      if (shouldShow) {
+        setQueue((messages) => [...messages, args]);
+        console.log("broadcast", args);
+      } else {
+        console.log("broadcast ignored", {
+          role,
+          roleId,
+          currentTeamId,
+          broadcastLevel,
+          message: args,
+        });
+      }
+    };
+
+    const handlePhase = (phase) => {
+      setQueue((messages) => [
+        ...messages,
+        {
+          title: `Phase Changed to ${phase}`,
+          description: "",
+        },
+      ]);
       setPhase(phase);
       console.log("phase", phase);
-    });
+    };
+
+    socket.on("broadcast", handleBroadcast);
+    socket.on("phase", handlePhase);
 
     return () => {
-      socket.off("broadcast");
+      socket.off("broadcast", handleBroadcast);
+      socket.off("phase", handlePhase);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [role, roleId, setPhase]);
 
   const broadcastType = (level) => {
     console.log(level);

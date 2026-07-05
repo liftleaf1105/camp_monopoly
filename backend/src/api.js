@@ -1040,12 +1040,13 @@ router.post("/handleDeBuff", async (req, res) => {
   res.json("Success").status(200);
 });
 
-const normalizeTransferPayload = ({ from, to, dollar, IsEstate }) => {
+const normalizeTransferPayload = ({ from, to, dollar, IsEstate, landName }) => {
   const payload = {
     from: Number(from),
     to: Number(to),
     dollar: Number(dollar),
     IsEstate: IsEstate === true || IsEstate === "true",
+    landName,
   };
 
   if (
@@ -1058,6 +1059,8 @@ const normalizeTransferPayload = ({ from, to, dollar, IsEstate }) => {
 
   return payload;
 };
+
+const formatTeamName = (teamId) => `第${String(teamId).padStart(2, "0")}小隊`;
 
 const calcTransfer = async (from, to, amount, isEstate) => {
   from = Number(from);
@@ -1098,7 +1101,7 @@ router.post("/transfer", async (req, res) => {
   const payload = normalizeTransferPayload(req.body);
   if (!payload) return res.status(400).send("Invalid transfer payload");
 
-  const { from, to, IsEstate, dollar } = payload;
+  const { from, to, IsEstate, dollar, landName } = payload;
   //update team status
   await Team.findAndCheckValid(from);
   await Team.findAndCheckValid(to);
@@ -1110,6 +1113,14 @@ router.post("/transfer", async (req, res) => {
   } else {
     await Team.findOneAndUpdate({ id: from }, { money: data.from });
     await Team.findOneAndUpdate({ id: to }, { money: data.to });
+    if (IsEstate) {
+      req.io.emit("broadcast", {
+        targetTeamId: to,
+        title: "收到過路費",
+        description: `${formatTeamName(from)}支付了 ${dollar} 元過路費`,
+        note: landName ? `地產：${landName}` : "",
+      });
+    }
     res.status(200).send("Update succeeded");
     console.log("success");
   }

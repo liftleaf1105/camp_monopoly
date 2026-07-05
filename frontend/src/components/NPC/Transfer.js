@@ -170,6 +170,7 @@ const Transfer = () => {
           to: to,
           IsEstate: building !== -1,
           dollar: parseInt(amount),
+          landName: buildingData.name,
         },
       });
       console.log(data);
@@ -186,6 +187,7 @@ const Transfer = () => {
       to: to,
       IsEstate: building !== -1,
       dollar: parseInt(amount),
+      landName: buildingData.name,
     };
 
     console.log(payload);
