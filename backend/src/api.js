@@ -294,7 +294,12 @@ router.get("/land", async (req, res) => {
 });
 
 router.get("/land/:id", async (req, res) => {
-  const land = await Land.findOne({ id: req.params.id });
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid land id" });
+    return;
+  }
+  const land = await Land.findOne({ id });
   res.json(land).status(200);
 });
 

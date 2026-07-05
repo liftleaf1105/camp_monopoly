@@ -128,25 +128,10 @@ const Transfer = () => {
     console.log(amount);
   };
 
-  const handleTo = async (to, newBuildingData) => {
+  const handleTo = async (to) => {
     const { data: toData } = await axios.get("/team/" + to);
     setToData(toData);
     setTo(to);
-
-    /*if the "to" is not the owner and is affected by hawkeye, 
-    then set the price equal to the 40% rent of hawkeye's building */
-
-    // console.log(to !== buildingData.owner);
-    // console.log(buildingData.id !== buildingData.hawkEye);
-    // console.log(buildingData);
-    // if (buildingData === null) return;
-    const data = newBuildingData !== undefined ? newBuildingData : buildingData;
-    if (to !== data.owner && data.id !== data.hawkEye) {
-      const res = await axios.get("/land/" + data.hawkEye);
-      console.log(res.data);
-      setAmount(Math.round(0.4 * res.data.rent[res.data.level - 1]));
-      setErrorMessage("Auto Fill Hawk Eye");
-    }
   };
 
   const FetchFinal = async () => {
