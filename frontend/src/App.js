@@ -32,9 +32,11 @@ import theme from "./theme";
 import SetDice from "./components/NPC/SetDice";
 import Map from "./components/Properties/Map";
 import Random from "./components/NPC/Random";
+import Card from "./components/NPC/Card";
 import SetResources from "./components/admin/SetResources";
 import Help from "./components/Help";
 import ResourcesView from "./components/Teams/ResourcesView";
+import StageDisplay from "./components/StageDisplay";
 import BankTransfer from "./components/NPC/BankTransfer";
 import Interest from "./components/admin/Interest";
 // import SetPrices from "./components/admin/Resources";
@@ -94,13 +96,16 @@ const App = () => {
               <Route path="notifications" element={<Notifications />} />
               <Route path="teams" element={<Teams />} />
               <Route path="resourcesview" element={<ResourcesView />} />
+              <Route path="stage-display" element={<StageDisplay />} />
               <Route path="properties" element={<Properties />} />
               <Route path="sellproperty" element={<SellProperty />} />
               <Route path="login" element={<Login />} />
               <Route path="addmoney" element={<AddMoney />} />
               <Route path="setownership" element={<SetOwnership />} />
               <Route path="transfer" element={<Transfer />} />
+              <Route path="card" element={<Card />} />
               <Route path="banktransfer" element={<BankTransfer />} />
+              <Route path="interest" element={<Interest />} />
               <Route path="setshop" element={<SetShopLevel />} />
               <Route path="random" element={<Random />} />
               <Route path="event" element={<Event />} />
@@ -109,7 +114,6 @@ const App = () => {
               <Route path="setoccupation" element={<SetOccupation />} />
               <Route path="permission" element={<PermissionDenied />} />
               <Route path="loading" element={<Loading />} />
-              <Route path="interest" element={<Interest />} />
               <Route path="bank" element={<Bank />} />
               <Route path="bankrupt" element={<Bankrupt />} />
               <Route path="broadcast" element={<Broadcast />} />

@@ -42,11 +42,11 @@ return (
                     <Button
                         variant="contained"
                         sx={{ marginBottom: 1, width: 120 }}
-                        onClick={() => window.open("https://docs.google.com/document/d/19I0IdzCRS0tzdB3vE4bOdhDoOwFl-_3GTPtiFVcH7ak/edit", "_blank")}
+                        onClick={() => window.open("https://docs.google.com/document/d/1lmCTCfiQkok6AxNVji6PVGJ5dotwqzq7xNzDdWjORXM/edit", "_blank")}
                     >
                         隊輔須知
                     </Button>
-                    {/* <Button
+                    <Button
                         variant="contained"
                         sx={{ marginBottom: 1, width: 120 }}
                         onClick={() => window.open("https://docs.google.com/document/d/1hJ7guJ6CndYnsPq2GxAT8Z7rgyGOIWGgSjC96mGk2mU/edit", "_blank")}
@@ -66,11 +66,11 @@ return (
                         onClick={() => window.open("https://docs.google.com/spreadsheets/d/1J9-TY4O-zkLXBxuQDyMl87b6VFY9hGrt/edit?usp=drive_link&ouid=113752778377958120846&rtpof=true&sd=true", "_blank")}
                     >
                         技能卡
-                    </Button> */}
+                    </Button>
                     <Button
                         variant="contained"
                         sx={{ marginBottom: 1, width: 120 }}
-                        onClick={() => window.open("https://docs.google.com/spreadsheets/d/1XfhvO4DgxAwPeSc6XqY5qxl2pFLWKtdrqyR_BTcp5zM/edit?gid=0#gid=0", "_blank")}
+                        onClick={() => window.open("https://docs.google.com/spreadsheets/d/1uOwBtqZWkz8dfhK-TYxJgbKdcwu1G4Hb5SYgd-DmB_M/edit?gid=0#gid=0", "_blank")}
                     >
                         陽春銀行
                     </Button>

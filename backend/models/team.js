@@ -7,7 +7,7 @@ const TeamSchema = new Schema({
   bank: Number,
   deposit: Number,
   resources: {
-    // love: Number,
+    love: Number,
     eecoin: Number,
   },
   bonus: { value: Number, time: Number, duration: Number },

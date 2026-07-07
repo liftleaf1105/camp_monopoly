@@ -21,7 +21,6 @@ const Teams = () => {
     { id: "teamname", label: "Team", minWidth: "10vw", align: "center" },
     // { id: "dice", label: "Dice", minWidth: "5vw", align: "center" },
     { id: "money", label: "Money", minWidth: "17vw", align: "center" },
-    { id: "bank", label: "Bank", minWidth: "17vw", align: "center" },
     { id: "resources", label: "Resources", minWidth: "17vw", align: "center" },
     { id: "asset", label: "Total Asset", minWidth: "17vw", align: "center" },
   ];
@@ -118,15 +117,13 @@ const Teams = () => {
                               } */}
                             {
                               column.id === "money"
-                                ? Math.round(team[column.id]) >= 0
+                                ? Math.round(team[column.id]) > 0
                                   ? Math.round(team[column.id])
                                   : `${Math.round(team[column.id])} (破產)`
-                                : column.id === "bank"
-                                  ? Math.round(team[column.id])
                                 : column.id === "resources"
-                                  ? `布萊德彼特幣: ${team[column.id].eecoin}`
+                                  ? `總召的愛: ${team[column.id].love}, EE幣: ${team[column.id].eecoin}`
                                   : column.id === "asset"
-                                    ? Math.round(team.money) + team.resources.eecoin * resourcePrice[0] + team.bank
+                                    ? Math.round(team.money) + team.resources.love * resourcePrice[0] + team.resources.eecoin * resourcePrice[1]
                                     : team[column.id]
                             }
 

@@ -49,19 +49,6 @@ const Event = () => {
     navigate("/teams");
   }
 
-  const handleReset = async () => {
-    try {
-      console.log("reset");
-      await axios.post("/reset", {});
-      navigate("/teams");
-    } catch (error) {
-      console.error("There was an error resetting:", error);
-    }
-
-    navigate("/teams");
-  };
-  
-
   useEffect(() => {
     if (role !== "admin") {
       navigate("/permission");
@@ -126,36 +113,6 @@ const Event = () => {
               Submit
             </Button>
           </FormControl>
-
-          <Box
-            sx={{
-              marginTop: 15  ,
-              display: 'flex',
-              flexDirection: 'column', // Arrange children vertically
-              alignItems: 'center',    // Center items horizontally
-              justifyContent: 'center', // Center items vertically
-            }}
-          >
-            <Typography component="h1" variant="subtitle2" sx={{ color: 'gray', marginBottom: 2 }}>
-              CAUTION: It will reset EVERYTHING.
-            </Typography>
-            <Button
-              variant="contained"
-              sx={{
-                width: 120,
-                backgroundColor: 'red', // Set the background color to red
-                '&:hover': {
-                  backgroundColor: 'darkred' // Optional: change color on hover
-                }
-              }}
-              onClick={() => {
-                handleReset();
-              }}
-            >
-              RESET
-            </Button>
-          </Box>
-
           {APIResponse && <Alert severity="info">{APIResponse}</Alert>}
         </Box>
 

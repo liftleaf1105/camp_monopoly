@@ -30,16 +30,10 @@ const AddMoney = () => {
   const [team, setTeam] = useState(-1);
   const [teamData, setTeamData] = useState({});
   const [newData, setNewData] = useState(0);
-  const [jeff, setJeff] = useState(false);
-  const [jeffTeam, setJeffTeam] = useState(-1);
   const [checkMessage, setCheckMessage] = useState("");
 
   const [amount, setAmount] = useState("0");
   const [errorMessage, setErrorMessage] = useState("");
-
-  const [discount, setDiscount] = useState(1);
-  const [errorMessage0, setErrorMessage0] = useState("");
-  const [error0, setError0] = useState(false);
 
   const [building, setBuilding] = useState(-1);
   const [price, setPrice] = useState({});
@@ -89,18 +83,6 @@ const AddMoney = () => {
     }
     // console.log(data);
   };
-
-  const handleJeff = async () => {
-    const { data } = await axios.get("/teamRich");
-    console.log(data);
-    setJeff(true);
-    setJeffTeam(data.id);
-    handleAmount(Math.round(data.money * 0.25));
-  };
-
-  const handleDiscount = () => {
-    setAmount(amount * discount);
-  }
 
   const handleCard = async (number) => {
     if (number === 0) {
@@ -158,11 +140,8 @@ const AddMoney = () => {
       id: team,
       teamname: `第${team}小隊`,
       dollar: parseInt(amount) ? parseInt(amount) : 0,
-      jeff: jeff,
-      jeffTeam: jeffTeam,
     };
     await axios.post("/add", payload);
-    setJeff(false);
     navigate("/teams");
     setNavBarId(2);
   };
@@ -275,9 +254,9 @@ const AddMoney = () => {
               justifyContent: "space-between",
             }}
           >
-            <SimpleMoneyButton val={+4000} />
-            <SimpleMoneyButton val={+10000} />
-            <SimpleMoneyButton val={+16000} />
+            <SimpleMoneyButton val={+100} />
+            <SimpleMoneyButton val={+1000} />
+            <SimpleMoneyButton val={+5000} />
           </Box>
           <Box
             sx={{
@@ -286,9 +265,9 @@ const AddMoney = () => {
               justifyContent: "space-between",
             }}
           >
-            <SimpleMoneyButton val={+2000} />
-            <SimpleMoneyButton val={+3000} />
-            <SimpleMoneyButton val={+5000} />
+            <SimpleMoneyButton val={-100} />
+            <SimpleMoneyButton val={-1000} />
+            <SimpleMoneyButton val={-5000} />
           </Box>
           <Box
             sx={{
@@ -300,7 +279,7 @@ const AddMoney = () => {
             <Button
               variant="contained"
               disabled={team === -1 || !price.buy}
-              sx={{ marginBottom: 1, width: 120 }}
+              sx={{ marginBottom: 1, width: 80 }}
               onClick={() => {
                 handleAmount(-1 * price.buy);
                 checkPropertyCost("Buy");
@@ -311,7 +290,7 @@ const AddMoney = () => {
             <Button
               variant="contained"
               disabled={team === -1 || !price.upgrade}
-              sx={{ marginBottom: 1, width: 120 }}
+              sx={{ marginBottom: 1, width: 80 }}
               onClick={() => {
                 handleAmount(-1 * price.upgrade);
                 checkPropertyCost("Upgrade");
@@ -320,50 +299,6 @@ const AddMoney = () => {
               Upgrade
             </Button>
           </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginTop: 1,
-              marginBottom: 1,
-              width: "100%",
-            }}
-          >
-            <TextField
-              required
-              error={error0}
-              label="discount"
-              id="discount"
-              value={discount}
-              onChange={(e) => {
-                const re = /^\d*\.?\d*$/;
-                if (e.target.value === "" || re.test(e.target.value)) {
-                  setDiscount(e.target.value ? e.target.value : "");
-                  setErrorMessage0("");
-                  setError0(false);
-                } else {
-                  setErrorMessage0("Please enter a valid number");
-                  setError0(true);
-                }
-              }}
-              helperText={errorMessage0}
-              FormHelperTextProps={{ error: true }}
-            />
-
-            <Button
-              variant="contained"
-              disabled={amount === 0 || discount === 1}
-              onClick={handleDiscount}
-              fullWidth
-              fullHeight
-              sx={{ marginLeft: 1 }}
-            >
-              Calculate
-            </Button>
-          </Box>
-
           {/* <Box
             sx={{
               display: "flex",

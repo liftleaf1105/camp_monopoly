@@ -11,8 +11,10 @@ import MapIcon from "@mui/icons-material/Map";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 import CalculateIcon from '@mui/icons-material/Calculate';
-import SavingsIcon from '@mui/icons-material/Savings';
-import LocalAtmIcon from '@mui/icons-material/LocalAtm';
+import CollectionsIcon from "@mui/icons-material/Collections";
+import StyleIcon from "@mui/icons-material/Style";
+import SavingsIcon from "@mui/icons-material/Savings";
+import LocalAtmIcon from "@mui/icons-material/LocalAtm";
 
 export const NavBarItems = [
   {
@@ -44,7 +46,14 @@ export const NavBarItems = [
     route: "map",
   },
   {
-    id: 5,
+    id: 17,
+    icon: <CollectionsIcon />,
+    label: "Stage Display",
+    shortLabel: "Display",
+    route: "stage-display",
+  },
+  {
+    id: 11,
     icon: <AutoGraphIcon />, //resource
     label: "ResourcesView",
     shortLabel: "ResourcesView",
@@ -61,33 +70,47 @@ export const NavBarItems = [
 
 export const NPCItems = [
   {
-    id: 6,
+    id: 5,
     icon: <PaidIcon />,
     label: "Add Money",
     shortLabel: "Money",
     route: "addmoney",
   },
   {
-    id: 7,
+    id: 6,
     icon: <RequestQuoteIcon />,
     label: "Set Ownership",
     shortLabel: "Ownership",
     route: "setownership",
   },
   {
-    id: 8,
+    id: 7,
     icon: <CurrencyExchangeIcon />,
     label: "Transfer",
     shortLabel: "Transfer",
     route: "transfer",
   },
   {
-    id: 9,
-    icon: <SavingsIcon />, 
+    id: 18,
+    icon: <StyleIcon />,
+    label: "Card",
+    shortLabel: "Card",
+    route: "card",
+  },
+  {
+    id: 8,
+    icon: <SavingsIcon />,
     label: "Bank",
     shortLabel: "BankTransfer",
     route: "banktransfer",
   },
+  // {
+  //   id: 11,
+  //   icon: <AccountBalanceIcon />,
+  //   label: "Bank",
+  //   shortLabel: "Bank",
+  //   route: "bank",
+  // }
   // {
   //   id: 14,
   //   icon: <QuizIcon />,
@@ -96,7 +119,7 @@ export const NPCItems = [
   //   route: "random",
   // },
   {
-    id: 10,
+    id: 15,
     icon: <AutoGraphIcon />, //resource
     label: "Resources",
     shortLabel: "Resources",
@@ -106,35 +129,42 @@ export const NPCItems = [
 
 export const adminItems = [
   {
-    id: 11,
+    id: 10,
     icon: <EventIcon />,
     label: "Event / Phase",
     shortLabel: "Event",
     route: "event",
   },
   {
-    id: 12,
+    id: 9,
     icon: <LocalAtmIcon />,
     label: "Interest",
     shortLabel: "Interest",
     route: "interest",
   },
+  // {
+  //   id: 11,
+  //   icon: <AccountBalanceIcon />,
+  //   label: "Bank",
+  //   shortLabel: "Bank",
+  //   route: "bank",
+  // },
   {
-    id: 13,
+    id: 12,
     icon: <BuildIcon />,
     label: "Team Info",
     shortLabel: "Team",
     route: "teams",
   },
   {
-    id: 14,
+    id: 13,
     icon: <PaidIcon />,
     label: "Bankrupt",
     shortLabel: "Bankrupt",
     route: "bankrupt",
   },
   {
-    id: 15,
+    id: 14,
     icon: <VolumeUpIcon />,
     label: "Broadcast",
     shortLabel: "Broadcast",

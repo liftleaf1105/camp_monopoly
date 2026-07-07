@@ -169,7 +169,7 @@ const ResourcesView = () => {
             </TableContainer>
 
 
-            {/* <Box sx={{ display: "flex", justifyContent: "center" }}>
+            <Box sx={{ display: "flex", justifyContent: "center" }}>
               <img
                 src="/love.jpg"
                 alt="Map"
@@ -179,7 +179,7 @@ const ResourcesView = () => {
                   marginTop: "20px",
                 }}
               />
-            </Box> */}
+            </Box>
           </Paper>
         
       </>
