@@ -524,25 +524,21 @@ router.get("/allEvents", async (req, res) => {
 router.post("/reset", async(req, res) =>{
   console.log("RESET");
 
-  //reset everything
-  const teams = await Team.find();
-  const resources = await Resource.find();
+  try {
+    // Use updateMany + $set so only the reset fields are cast/validated.
+    // This avoids re-validating unrelated legacy fields (e.g. a malformed
+    // price.upgrade) that would make a full-document .save() throw.
+    await Team.updateMany(
+      {},
+      { $set: { money: 40000, bank: 0, "resources.eecoin": 0 } }
+    );
+    await Resource.updateMany({}, { $set: { price: 10000 } });
+    await Land.updateMany({}, { $set: { owner: 0, level: 0 } });
 
-  for(let i = 0; i < teams.length; i++) {
-    teams[i].money = 40000;
-    teams[i].bank = 0;
-    teams[i].resources.eecoin = 0;
-    await teams[i].save();
-  }
-
-  resources[0].price = 10000;
-
-  const lands = await Land.find();
-  //set all lands to 0
-  for(let i = 0; i < lands.length; i++) {
-    lands[i].owner = 0;
-    lands[i].level = 0;
-    await lands[i].save();
+    res.json("Success").status(200);
+  } catch (err) {
+    console.error("Error resetting:", err);
+    res.status(500).json({ message: "Failed to reset" });
   }
 })
 
