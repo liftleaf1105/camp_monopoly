@@ -514,46 +514,44 @@ const events = [
   },
   {
     id: 1,
-    title: "山賊入侵",
-    description:
-      "遭遇打劫，各組金錢資源減少30%",
+    title: "海盜搶劫",
+    description: "海盜搶劫，各組金錢資源減少30%",
   },
   {
     id: 2,
-    title: "逃犯越獄",
-    description: "獄卒氣憤不已，隨機抽取3支隊伍當替死鬼進監獄",
+    title: "獵巫行動",
+    description: "獄卒氣憤不已，隨機抽取3支隊伍前往監獄代罪",
   },
   {
     id: 3,
-    title: "同伴遇難",
-    description: "其中一個小隊員遭敵人抓走，須前往監獄營救",
+    title: "大航海時代",
+    description: "大航海時代提升經濟，EE幣大漲",
   },
   {
     id: 4,
-    title: "大富翁",
-    description: "普雷提升經濟，EE幣大漲",
+    title: "法國大革命",
+    description: "因為革命，EE幣暴跌",
   },
   {
     id: 5,
-    title: "八國革命",
-    description: "各國響應革命，NPC同時呼口號，因為戰爭，EE幣暴跌",
+    title: "男同俱樂部",
+    description: "男隊輔被發現剽竊畫作，需要小隊員前往監獄贖人",
   },
   {
     id: 6,
-    title: "屠魔令",
-    description: "各組消耗大量資源躲避追緝，各組物資減少50%(四捨五入)",
+    title: "黑死病",
+    description: "各組消耗大量資源對付疾病，各組所有資源減少40%(四捨五入)",
   },
   {
     id: 7,
-    title: "快速道路",
+    title: "十字軍東征",
     description:
-      "普雷興建高速公路，各組下一次同時前進15格，同時因為EE幣流動性大升，價格大漲",
+      "十字軍東征，各組同時前進15格(下一輪)，同時EE幣流通性提升，價格大漲",
   },
   {
     id: 8,
     title: "魔法失效",
-    description:
-      "遊戲結束前無法使用卡片，同時EE幣跟著暴跌",
+    description: "遊戲結束前無法使用卡片效果，同時EE幣又暴跌",
   },
 ];
 

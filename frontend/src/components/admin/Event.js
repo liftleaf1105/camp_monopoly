@@ -15,39 +15,45 @@ import {
 import Loading from "../Loading";
 import RoleContext from "../useRole";
 import axios from "../axios";
+import TeamSelect from "../TeamSelect";
 
 const Event = () => {
-  const [event, setEvent] = useState(0);
-  const [message, setMessage] = useState("無");
+  const [event, setEvent] = useState("");
+  const [message, setMessage] = useState("");
   const [APIResponse, setAPIResponse] = useState("");
-  const [tempPhase, setTempPhase] = useState(1);
   const [events, setEvents] = useState([]);
-  const { role, setPhase } = useContext(RoleContext);
+  const [jailTeams, setJailTeams] = useState([-1, -1, -1]);
+  const { role } = useContext(RoleContext);
   const navigate = useNavigate();
 
+  const selectedEvent = events.find((item) => item.id === event);
+  const selectedJailTeams = jailTeams.filter((team) => team !== -1);
+  const hasDuplicateJailTeam =
+    selectedJailTeams.length !== new Set(selectedJailTeams).size;
+  const needsJailTeams = event === 2;
+  const canSubmit =
+    event !== "" &&
+    (!needsJailTeams ||
+      (selectedJailTeams.length === 3 && !hasDuplicateJailTeam));
+
   const handleClick = async () => {
-    await axios.post("/event", { id: event }).then((res) => {
+    const payload = needsJailTeams
+      ? { id: event, targetTeamIds: jailTeams }
+      : { id: event };
+
+    await axios.post("/event", payload).then((res) => {
       setAPIResponse(res.data);
     });
     // navigate("/notifications");
   };
 
-  const handleClick2 = async () => {
-    setPhase(tempPhase);
-    await axios.post("/phase", { phase: tempPhase });
-    navigate("/notifications");
+  const handleJailTeam = (index, team) => {
+    setJailTeams((teams) =>
+      teams.map((currentTeam, currentIndex) =>
+        currentIndex === index ? team : currentTeam
+      )
+    );
   };
-
-  const handleMoneyPercent = async () => {
-    await axios.post("/percent", {});
-    navigate("/teams");
-  }
-
-  const handleResourcePercent = async () => {
-    console.log("in");
-    await axios.post("/cutResource", {});
-    navigate("/teams");
-  }
 
   useEffect(() => {
     if (role !== "admin") {
@@ -56,7 +62,8 @@ const Event = () => {
     axios
       .get("/allEvents")
       .then((res) => {
-        setEvents(res.data);
+        const playableEvents = res.data.filter((item) => item.id > 0);
+        setEvents(playableEvents);
       })
       .catch((err) => {
         console.log(err);
@@ -80,39 +87,72 @@ const Event = () => {
           <Typography component="h1" variant="h5">
             Event Settings
           </Typography>
-          <FormControl variant="standard" sx={{ minWidth: 250, marginTop: 2 }}>
-            <InputLabel id="title">Title</InputLabel>
-            <Select
-              value={event}
-              labelId="title"
-              onChange={(e) => {
-                setEvent(e.target.value);
-                setMessage(events[e.target.value].description);
-              }}
-            >
-              {events.map((item) => {
-                return (
-                  <MenuItem value={item.id} key={events.indexOf(item)}>
-                    {item.title}
-                  </MenuItem>
-                );
-              })}
-            </Select>
+          <Box sx={{ minWidth: 250, marginTop: 2, width: "100%" }}>
+            <FormControl variant="standard" fullWidth>
+              <InputLabel id="title">Title</InputLabel>
+              <Select
+                value={event}
+                labelId="title"
+                onChange={(e) => {
+                  const eventId = e.target.value;
+                  const nextEvent = events.find((item) => item.id === eventId);
+                  setEvent(eventId);
+                  setMessage(nextEvent ? nextEvent.description : "");
+                  setJailTeams([-1, -1, -1]);
+                  setAPIResponse("");
+                }}
+              >
+                <MenuItem value="">Select Event</MenuItem>
+                {events.map((item) => {
+                  return (
+                    <MenuItem value={item.id} key={item.id}>
+                      {item.title}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
             <TextField
               id="content"
               label="Content"
               multiline
+              fullWidth
               sx={{ marginTop: 2, marginBottom: 2 }}
               variant="standard"
               value={message}
-              onChange={(e) => {
-                setMessage(e.target.value);
-              }}
+              InputProps={{ readOnly: true }}
             />
-            <Button disabled={!message} onClick={handleClick}>
+            {needsJailTeams && (
+              <>
+                {[0, 1, 2].map((index) => (
+                  <FormControl
+                    key={index}
+                    variant="standard"
+                    fullWidth
+                    sx={{ marginTop: 1 }}
+                  >
+                    <TeamSelect
+                      label={`Jail Team ${index + 1}`}
+                      team={jailTeams[index]}
+                      handleTeam={(team) => handleJailTeam(index, team)}
+                    />
+                  </FormControl>
+                ))}
+                {hasDuplicateJailTeam && (
+                  <Alert severity="warning" sx={{ marginTop: 2 }}>
+                    請選擇三個不同的小隊
+                  </Alert>
+                )}
+              </>
+            )}
+            <Button
+              disabled={!canSubmit || !selectedEvent}
+              onClick={handleClick}
+              sx={{ marginTop: 2 }}
+            >
               Submit
             </Button>
-          </FormControl>
+          </Box>
           {APIResponse && <Alert severity="info">{APIResponse}</Alert>}
         </Box>
 
