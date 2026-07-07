@@ -32,6 +32,7 @@ import theme from "./theme";
 import SetDice from "./components/NPC/SetDice";
 import Map from "./components/Properties/Map";
 import Random from "./components/NPC/Random";
+import Card from "./components/NPC/Card";
 import SetResources from "./components/admin/SetResources";
 import Help from "./components/Help";
 import ResourcesView from "./components/Teams/ResourcesView";
@@ -100,6 +101,7 @@ const App = () => {
               <Route path="addmoney" element={<AddMoney />} />
               <Route path="setownership" element={<SetOwnership />} />
               <Route path="transfer" element={<Transfer />} />
+              <Route path="card" element={<Card />} />
               <Route path="setshop" element={<SetShopLevel />} />
               <Route path="random" element={<Random />} />
               <Route path="event" element={<Event />} />

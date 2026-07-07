@@ -12,6 +12,7 @@ import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 import CalculateIcon from '@mui/icons-material/Calculate';
 import CollectionsIcon from "@mui/icons-material/Collections";
+import StyleIcon from "@mui/icons-material/Style";
 
 export const NavBarItems = [
   {
@@ -86,6 +87,13 @@ export const NPCItems = [
     label: "Transfer",
     shortLabel: "Transfer",
     route: "transfer",
+  },
+  {
+    id: 18,
+    icon: <StyleIcon />,
+    label: "Card",
+    shortLabel: "Card",
+    route: "card",
   },
   // {
   //   id: 11,

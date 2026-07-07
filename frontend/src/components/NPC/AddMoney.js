@@ -30,8 +30,6 @@ const AddMoney = () => {
   const [team, setTeam] = useState(-1);
   const [teamData, setTeamData] = useState({});
   const [newData, setNewData] = useState(0);
-  const [jeff, setJeff] = useState(false);
-  const [jeffTeam, setJeffTeam] = useState(-1);
   const [checkMessage, setCheckMessage] = useState("");
 
   const [amount, setAmount] = useState("0");
@@ -84,14 +82,6 @@ const AddMoney = () => {
       setPrice({});
     }
     // console.log(data);
-  };
-
-  const handleJeff = async () => {
-    const { data } = await axios.get("/teamRich");
-    console.log(data);
-    setJeff(true);
-    setJeffTeam(data.id);
-    handleAmount(Math.round(data.money * 0.25));
   };
 
   const handleCard = async (number) => {
@@ -150,11 +140,8 @@ const AddMoney = () => {
       id: team,
       teamname: `第${team}小隊`,
       dollar: parseInt(amount) ? parseInt(amount) : 0,
-      jeff: jeff,
-      jeffTeam: jeffTeam,
     };
     await axios.post("/add", payload);
-    setJeff(false);
     navigate("/teams");
     setNavBarId(2);
   };
@@ -289,14 +276,6 @@ const AddMoney = () => {
               justifyContent: "space-between",
             }}
           >
-            <Button
-              variant="contained"
-              disabled={team === -1}
-              sx={{ marginBottom: 1, width: 80 }}
-              onClick={handleJeff}
-            >
-              Jeff
-            </Button>
             <Button
               variant="contained"
               disabled={team === -1 || !price.buy}

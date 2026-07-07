@@ -1,10 +1,12 @@
 import React from "react";
 import { InputLabel, Select, MenuItem } from "@mui/material";
 
-const TeamSelect = ({ label, team, handleTeam, hasZero, sx }) => {
+const TeamSelect = ({ label, team, handleTeam, hasZero, sx, shrink }) => {
   return (
     <>
-      <InputLabel id={label}>{label}</InputLabel>
+      <InputLabel id={label} shrink={shrink}>
+        {label}
+      </InputLabel>
       <Select
         value={team}
         labelId={label}
