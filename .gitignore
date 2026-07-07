@@ -26,3 +26,6 @@ yarn-error.log*
 
 # local dev tools/data
 .tools/
+
+# env
+/backend/.env.defaults
