@@ -1,3 +1,4 @@
+import HomeIcon from "@mui/icons-material/Home";
 import PeopleIcon from "@mui/icons-material/People";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import VillaIcon from "@mui/icons-material/Villa";
@@ -17,6 +18,13 @@ import SavingsIcon from "@mui/icons-material/Savings";
 import LocalAtmIcon from "@mui/icons-material/LocalAtm";
 
 export const NavBarItems = [
+  {
+    id: 0,
+    icon: <HomeIcon />,
+    label: "Home",
+    shortLabel: "Home",
+    route: "/",
+  },
   {
     id: 1,
     icon: <NotificationsIcon />,

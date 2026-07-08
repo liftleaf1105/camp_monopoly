@@ -6,7 +6,6 @@ import {
   Typography,
   Box,
   Button,
-  FormControl,
   Snackbar,
   Alert,
 } from "@mui/material";
@@ -48,6 +47,7 @@ const Login = () => {
   const { setRole, setRoleId } = useContext(RoleContext);
 
   const handleClick = async () => {
+    if (!(user && password)) return;
     // post /api/login
     const payload = { username: user, password: password };
     const {
@@ -93,7 +93,14 @@ const Login = () => {
         <Typography component="h1" variant="h5" sx={{ marginBottom: 1 }}>
           Login
         </Typography>
-        <FormControl variant="standard">
+        <Box
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleClick();
+          }}
+          sx={{ display: "flex", flexDirection: "column" }}
+        >
           <TextField
             required
             label="Username"
@@ -118,13 +125,13 @@ const Login = () => {
             }}
           />
           <Button
+            type="submit"
             sx={{ marginTop: 1 }}
             disabled={!(user && password)}
-            onClick={handleClick}
           >
             Login
           </Button>
-        </FormControl>
+        </Box>
       </Box>
       <Snackbar open={open} autoHideDuration={3000} onClose={handleClose}>
         <Alert
