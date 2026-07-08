@@ -13,6 +13,13 @@ This is the website of game "Monopoly" in NTUEE camp for freshman!
 yarn install-all
 ```
 
+### Env Config
+- Create `backend/.env` (git-ignored) with your MongoDB connection string:
+```bash
+MONGO_URL=mongodb+srv://<user>:<password>@<cluster>/?appName=<app>
+```
+
+- Before any commits, add `backend/.env` into `.gitignore` to avoid pushing your own MongoDB connection string up to the origin and keep real credentials only in `backend/.env`.
 
 ### Frontend
 ```bash

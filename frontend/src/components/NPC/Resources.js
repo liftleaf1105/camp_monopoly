@@ -27,8 +27,6 @@ import TeamSelect from "../TeamSelect";
 const Resources = () => {
   let flag = false;
   const [team, setTeam] = useState(-1);
-  const [teamToCheckBalance, setTeamToCheckBalance] = useState(0);
-  const [resourceToCheckQuan, setResourceToCheckQuan] = useState(0);
   const [mode, setMode] = useState(0);
   const [resourceId, setResourceId] = useState(-1);
   const [number, setNumber] = useState(0);
@@ -53,47 +51,48 @@ const Resources = () => {
       });
   };
 
-  const getCheck = async (team, resourceId) => {
-    axios
-      .get("/team/" + team)
-      .then((res) => {
-        setTeamToCheckBalance(res.data.money);
-
-        if(resourceId == 0){
-          setResourceToCheckQuan(res.data.resources.love);
-          console.log(res.data.resources.love);
-          console.log(resourceToCheckQuan);
-        }else if(resourceId == 1){
-          setResourceToCheckQuan(res.data.resources.eecoin);
-        }
-
-        console.log(resourceToCheckQuan);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-  };
-      
-  
   const handleClick = async () => {
+    const amount = Number(number);
+
+    if (team === -1 || resourceId === -1 || !Number.isFinite(amount) || amount <= 0) {
+      alert("Please select team/resource and enter a valid amount");
+      return;
+    }
+
     const payload = {
       teamId: team,
       resourceId: resourceId,
-      number: number,
+      number: amount,
       mode: mode, // 0 for sell, 1 for buy
     };
 
     console.log(payload);
-    //check whether the trade is valid
-    getCheck(team, resourceId);
+    const [{ data: teamData }, { data: latestResources }] = await Promise.all([
+      axios.get("/team/" + team),
+      axios.get("/resourceInfo"),
+    ]);
+
+    const resource = latestResources.find(
+      (item) => item.id === Number(resourceId)
+    );
+
+    if (!resource) {
+      alert("Please select resource");
+      return;
+    }
 
     if(mode === 1){//buy
-      if(teamToCheckBalance < resources[resourceId].price * number){
+      if(teamData.money < resource.price * amount){
         alert("Not enough money to buy");
         return;
       }
     }else{//sell
-      if(resourceToCheckQuan < number){
+      const currentResourceQuantity =
+        Number(resourceId) === 0
+          ? teamData.resources.love
+          : teamData.resources.eecoin;
+
+      if(currentResourceQuantity < amount){
         alert("Not enough resource to sell");
         return;
       }
@@ -121,11 +120,9 @@ const Resources = () => {
   useEffect(() => {
     // getResourcesQuan();
     getResources();
-    getCheck(team, resourceId);
     const update = setInterval(() => {
       // getResourcesQuan();
       getResources();
-      getCheck(team, resourceId);
       flag = !flag;
       if (flag) updatePrices();
       console.log("update");

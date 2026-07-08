@@ -723,9 +723,59 @@ router.post("/interest", async(req, res) => {
   res.json("Success").status(200);
 });
 
+const eventDefinitions = [
+  {
+    id: 1,
+    title: "海盜搶劫",
+    description: "海盜搶劫，各組金錢資源減少30%",
+  },
+  {
+    id: 2,
+    title: "獵巫行動",
+    description: "獄卒氣憤不已，隨機抽取3支隊伍前往監獄代罪",
+  },
+  {
+    id: 3,
+    title: "大航海時代",
+    description: "大航海時代提升經濟，EE幣大漲",
+  },
+  {
+    id: 4,
+    title: "法國大革命",
+    description: "因為革命，EE幣暴跌",
+  },
+  {
+    id: 5,
+    title: "男同俱樂部",
+    description: "男隊輔被發現剽竊畫作，需要小隊員前往監獄贖人",
+  },
+  {
+    id: 6,
+    title: "黑死病",
+    description: "各組消耗大量資源對付疾病，各組所有資源減少40%(四捨五入)",
+  },
+  {
+    id: 7,
+    title: "十字軍東征",
+    description:
+      "十字軍東征，各組同時前進15格(下一輪)，同時EE幣流通性提升，價格大漲",
+  },
+  {
+    id: 8,
+    title: "魔法失效",
+    description: "遊戲結束前無法使用卡片效果，同時EE幣又暴跌",
+  },
+];
+
+const emptyEvent = {
+  id: 0,
+  title: "無",
+  description: "",
+  note: "",
+};
+
 router.get("/allEvents", async (req, res) => {
-  const events = await Event.find().sort({ id: 1 });
-  res.json(events).status(200);
+  res.json([emptyEvent, ...eventDefinitions]).status(200);
 });
 
 router.post("/reset", async(req, res) =>{
@@ -749,165 +799,135 @@ router.post("/reset", async(req, res) =>{
   }
 })
 
+const getEventDefinition = (id) =>
+  eventDefinitions.find((event) => event.id === id);
+
+const eventResourcePrices = {
+  1: { love: 9000, eecoin: 12000 },
+  2: { love: 10000, eecoin: 15000 },
+  3: { love: 11000, eecoin: 30000 },
+  4: { love: 12000, eecoin: 1000 },
+  5: { love: 8000, eecoin: 5000 },
+  6: { love: 10500, eecoin: 2000 },
+  7: { love: 9000, eecoin: 15000 },
+  8: { love: 10000, eecoin: 100 },
+};
+
+const updateResourcePrices = async (prices) => {
+  await Resource.findOneAndUpdate({ id: 0 }, { price: prices.love });
+  await Resource.findOneAndUpdate({ id: 1 }, { price: prices.eecoin });
+};
+
 router
   .post("/event", async (req, res) => {
-    const { id } = req.body;
-    const teams = await Team.find();
-    const pair = await Pair.findOne({ key: "currentEvent" });
-    if (pair) {
-      const currentEvent = parseInt(pair.value);
+    try {
+      const id = Number(req.body.id);
+      const { targetTeamIds = [] } = req.body;
+      const pair = await Pair.findOne({ key: "currentEvent" });
+      const eventDefinition = getEventDefinition(id);
+      const eventRecord = await Event.findOne({ id });
+
+      if (!pair || !eventDefinition || !eventResourcePrices[id]) {
+        res.status(400).json("Failed");
+        return;
+      }
+
       let note = "";
 
-      for (let i = 0; i < teams.length; i++) {
-        teams[i].deposit = Math.round(teams[i].deposit * 0.15) * 10;
-        await teams[i].save();
-      }
       switch (id) {
-        default: 
-          res.json("Success").status(200);
-          break;
-        case 1: // 山賊入侵，各組金錢減少30%。
-          {
-            const teams = await Team.find();
-            for (let i = 0; i < teams.length; i++) {
-              teams[i].money  = teams[i].money * 0.7;
-              await teams[i].save();
-            }
-            res.json("Success").status(200);
+        case 1: {
+          const teams = await Team.find();
+          for (let i = 0; i < teams.length; i++) {
+            teams[i].money = Math.round(teams[i].money * 0.7);
+            await teams[i].save();
           }
           break;
-        case 6: // 屠魔令，所有資源減少50%
-          {
-            const teams = await Team.find();
-            for (let i = 0; i < teams.length; i++) {
-              teams[i].resources.eecoin = Math.round(teams[i].resources.eecoin * 0.5);
-              teams[i].resources.love = Math.round(teams[i].resources.love * 0.5);
-              await teams[i].save();
-            }
-            res.json("Success").status(200);
+        }
+        case 2: {
+          const selectedTeams = targetTeamIds.map((teamId) => Number(teamId));
+          const uniqueTeams = new Set(selectedTeams);
+
+          if (
+            selectedTeams.length !== 3 ||
+            uniqueTeams.size !== 3 ||
+            selectedTeams.some(
+              (teamId) =>
+                !Number.isInteger(teamId) || teamId < 1 || teamId > 10
+            )
+          ) {
+            res.status(400).json("Please select three different teams");
+            return;
+          }
+
+          note = `${selectedTeams
+            .map((teamId) => String(teamId).padStart(2, "0"))
+            .map((teamId) => `第${teamId}小隊`)
+            .join("、")}前往監獄`;
+
+          break;
+        }
+        case 6: {
+          const teams = await Team.find();
+          for (let i = 0; i < teams.length; i++) {
+            teams[i].resources.eecoin = Math.round(
+              teams[i].resources.eecoin * 0.6
+            );
+            teams[i].resources.love = Math.round(teams[i].resources.love * 0.6);
+            await teams[i].save();
           }
           break;
-        // case 3: // 來幫臺灣衝經濟嘍, 每個小隊普發$10000。
-        //   {
-        //     const teams = await Team.find();
-        //     for (let i = 0; i < teams.length; i++) {
-        //       teams[i].money += 10000;
-        //       await teams[i].save();
-        //     }
-        //     res.json("Success").status(200);
-        //   }
-        //   break;
-        // case 5:
-        //   {
-        //     // 我們還能不能能不能再見面？戀愛腦的你向佛祖發誓，為了愛情你可以放棄一切, 於是向佛祖捐獻30%現金+任意一張卡片，以示誠心。
-        //     const teams = await Team.find();
-        //     for (let i = 0; i < teams.length; i++) {
-        //       teams[i].money = Math.round(teams[i].money * 0.07) * 10;
-        //       await teams[i].save();
-        //     }
-        //     res.json("Success").status(200);
-        //   }
-        //   break;
-        // case 8: //卡努颱風襲擊, 舟山河泛濫成災, 編號12至34的房子數量-1。房產等級1的地產不受影響
-        //   {
-        //     const lands = await (
-        //       await Land.find()
-        //     ).filter(
-        //       (land) =>
-        //         land.type === "Building" &&
-        //         land.level > 1 &&
-        //         land.id >= 12 &&
-        //         land.id <= 34
-        //     );
-        //     for (let i = 0; i < lands.length; i++) {
-        //       lands[i].level -= 1;
-        //       await lands[i].save();
-        //     }
-        //     res.json("Success").status(200);
-        //   }
-        //   break;
-        // case 10: // 獲得歷史線索, 獲得現金15000 + 一項隱藏成就的敘述
-        //   {
-        //     const teams = await Team.find();
-        //     for (let i = 0; i < teams.length; i++) {
-        //       teams[i].money += 15000;
-        //       await teams[i].save();
-        //     }
-        //     res.json("Success").status(200);
-        //   }
-        //   break;
-
-        // case 12: // 仇富心態爆發, 現金前2的小隊入獄 + 扣除其40%的現金, 並將其數額平分給剩下8個小隊
-        //   {
-        //     const teams = await Team.find().sort({ money: -1 });
-        //     const money1 = Math.round(teams[0].money * 0.04) * 10;
-        //     const money2 = Math.round(teams[1].money * 0.04) * 10;
-        //     let moneyAdd = Math.round((money1 + money2) / 80) * 10;
-        //     for (let i = 0; i < teams.length; i++) {
-        //       if (i === 0) {
-        //         teams[i].money -= money1;
-        //       } else if (i === 1) {
-        //         teams[i].money -= money2;
-        //       } else {
-        //         teams[i].money += moneyAdd;
-        //       }
-        //       await teams[i].save();
-        //     }
-
-        //     note = `${teams[0].teamname}、${teams[1].teamname}入獄！`;
-        //     res.json(note).status(200);
-        //   }
-        //   break;
-        // case 13:
-        //   {
-        //     // 各隊扣除「擁有的房子數量*2000」 的現金
-        //     const teams = await Team.find().sort({ id: 1 });
-        //     for (let i = 0; i < teams.length; i++) {
-        //       const lands = await Land.find({ owner: teams[i].id });
-        //       let total = 0;
-        //       for (let j = 0; j < lands.length; j++) {
-        //         total += lands[j].level;
-        //       }
-        //       console.log(`total: ${total}`);
-        //       teams[i].money -= total * 2000;
-        //       await teams[i].save();
-        //     }
-        //     res.json("Success").status(200);
-        //   }
-        //   break;
-
-        // case 15: // 將所有現金不足20000的小隊補至20000
-        //   {
-        //     const teams = await Team.find();
-        //     for (let i = 0; i < teams.length; i++) {
-        //       if (teams[i].money < 20000) {
-        //         teams[i].money = 20000;
-        //       }
-        //       teams[i].save();
-        //     }
-        //     res.json("Success").status(200);
-        //   }
-        //   break;
+        }
+        default:
+          break;
       }
+
+      await updateResourcePrices(eventResourcePrices[id]);
+
       pair.value = id;
       await pair.save();
 
-      const newEvent = await Event.findOne({ id });
-      newEvent.note = note;
-      newEvent.level = 0;
-      await newEvent.save();
-      // await new Notification(newEvent).save();
-      // console.log(newEvent);
-      req.io.emit("broadcast", newEvent);
+      if (eventRecord) {
+        eventRecord.note = note;
+        await eventRecord.save();
+      }
+
+      const eventAnnouncement = {
+        title: eventDefinition.title,
+        description: eventDefinition.description,
+        note,
+        level: 0,
+      };
+
+      req.io.emit("broadcast", eventAnnouncement);
+      res.status(200).json("Success");
       console.log("broadcast");
-    } else {
-      res.json("Failed").status(403);
+    } catch (err) {
+      console.error("Error publishing event:", err);
+      res.status(500).json("Failed");
     }
   })
   .get("/event", async (req, res) => {
     const pair = await Pair.findOne({ key: "currentEvent" });
-    const event = await Event.findOne({ id: pair.value });
-    res.json(event).status(200);
+    if (!pair) {
+      res.status(200).json(emptyEvent);
+      return;
+    }
+
+    const id = Number(pair.value);
+    const eventRecord = await Event.findOne({ id });
+    const eventDefinition = getEventDefinition(id);
+
+    if (!eventDefinition) {
+      res.json(eventRecord || emptyEvent).status(200);
+      return;
+    }
+
+    res
+      .json({
+        ...eventDefinition,
+        note: eventRecord ? eventRecord.note : "",
+      })
+      .status(200);
   });
 
 // router.post("/occupation", async (req, res) => {

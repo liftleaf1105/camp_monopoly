@@ -26,6 +26,17 @@ import Loading from "./Loading";
 import axios from "./axios";
 import RoleContext from "./useRole";
 
+const eventTitles = new Set([
+  "海盜搶劫",
+  "獵巫行動",
+  "大航海時代",
+  "法國大革命",
+  "男同俱樂部",
+  "黑死病",
+  "十字軍東征",
+  "魔法失效",
+]);
+
 const Notifications = () => {
   const [val, setVal] = useState(0); //tab value
   const [messages, setMessages] = useState([]); //temporary message
@@ -61,7 +72,11 @@ const Notifications = () => {
   const FetchMessages = async () => {
     const { data } = await axios.get("/notifications");
     const temporary = data.filter((item) => item.type === "temporary");
-    const permanent = data.filter((item) => item.type === "permenant");
+    const permanent = data.filter(
+      (item) =>
+        (item.type === "permenant" || item.type === "permanent") &&
+        !eventTitles.has(item.title)
+    );
     setMessages(temporary);
     setPermMessages(permanent);
   };
@@ -222,7 +237,9 @@ const Notifications = () => {
                 >
                   <CardContent>
                     <Typography variant="h6">{item.title}</Typography>
-                    <Typography variant="body2">{item.description}</Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-line" }}>
+                      {item.description}
+                    </Typography>
                   </CardContent>
                 </Card>
               ))}
