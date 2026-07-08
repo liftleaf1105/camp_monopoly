@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "./components/axios";
 import Header from "./components/Header";
 import "./App.css";
 import { Route, Routes, BrowserRouter, useLocation } from "react-router-dom";
@@ -54,6 +55,7 @@ const App = () => {
   const [phase, setPhase] = useState("");
   const [buildings, setBuildings] = useState([]);
   const [filteredBuildings, setFilteredBuildings] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const value = {
     navBarId,
     setNavBarId,
@@ -71,9 +73,57 @@ const App = () => {
     setBuildings,
     filteredBuildings,
     setFilteredBuildings,
+    unreadCount,
+    setUnreadCount,
   };
 
   const location = useLocation();
+
+  // On login (or refresh while logged in), compute how many notifications
+  // already exist on the server that the user hasn't seen yet (createdAt >
+  // lastSeen). This is a single background fetch, so it doesn't slow rendering.
+  // Live notifications received over the socket keep incrementing on top.
+  useEffect(() => {
+    if (role === "") {
+      setUnreadCount(0);
+      return;
+    }
+    const computeBaselineUnread = async () => {
+      try {
+        const lastSeen = Number(localStorage.getItem("notifLastSeen")) || 0;
+        const nowSec = Date.now() / 1000;
+        const [{ data: notifs }, { data: broadcasts }] = await Promise.all([
+          axios.get("/notifications"),
+          axios.get("/broadcast"),
+        ]);
+        let count = 0;
+        (notifs || []).forEach((n) => {
+          // skip expired temporary notifications (no longer shown)
+          if (
+            n.type === "temporary" &&
+            n.duration > 0 &&
+            nowSec - n.createdAt > n.duration
+          )
+            return;
+          // notification createdAt is in seconds
+          if (n.createdAt * 1000 > lastSeen) count += 1;
+        });
+        (broadcasts || []).forEach((b) => {
+          // broadcast createdAt is in milliseconds; only count what this role sees
+          if (
+            Number(roleId) >= Number(b.level || 0) &&
+            new Date(b.createdAt).getTime() > lastSeen
+          )
+            count += 1;
+        });
+        setUnreadCount(count);
+      } catch (e) {
+        console.error("Failed to compute unread notifications", e);
+      }
+    };
+    computeBaselineUnread();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
 
   return (
     // <SocketContext.Provider value={socket}>

@@ -9,6 +9,7 @@ import {
   ListItemIcon,
   Divider,
   SwipeableDrawer,
+  Badge,
 } from "@mui/material";
 import { NavBarItems, NPCItems, adminItems } from "./NavBarItem";
 import { NavBarStyles } from "./NavStyle";
@@ -16,7 +17,8 @@ import RoleContext from "../useRole";
 
 const Navbar = ({ open }) => {
   // const [navBarId, setNavBarId] = useState(0);
-  const { role, roleId, navBarId, setNavBarId } = useContext(RoleContext);
+  const { role, roleId, navBarId, setNavBarId, unreadCount } =
+    useContext(RoleContext);
   const navigate = useNavigate();
   const handleClick = (index, name) => {
     navigate(name);
@@ -30,7 +32,15 @@ const Navbar = ({ open }) => {
       onClick={() => handleClick(item.id, item.route)}
       selected={navBarId === item.id}
     >
-      <ListItemIcon sx={NavBarStyles.icons}>{item.icon}</ListItemIcon>
+      <ListItemIcon sx={NavBarStyles.icons}>
+        {item.route === "notifications" ? (
+          <Badge badgeContent={unreadCount} color="error" overlap="circular">
+            {item.icon}
+          </Badge>
+        ) : (
+          item.icon
+        )}
+      </ListItemIcon>
       <ListItemText sx={NavBarStyles.text} primary={item.label} />
     </ListItem>
   );

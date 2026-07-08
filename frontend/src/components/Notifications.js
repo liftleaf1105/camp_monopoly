@@ -33,7 +33,7 @@ const Notifications = () => {
   const [eventMessage, setEventMessage] = useState({}); //event
   const [broadcast, setBroadcast] = useState([]); //historical broadcasts
   const [open, setOpen] = useState(false); //snackbar open
-  const { roleId } = useContext(RoleContext);
+  const { roleId, setUnreadCount } = useContext(RoleContext);
 
   //tab components
   const handleChange = (e, val) => {
@@ -100,6 +100,9 @@ const Notifications = () => {
     } else {
       sessionStorage.removeItem("reloadCount");
     }
+
+    setUnreadCount(0);
+    localStorage.setItem("notifLastSeen", String(Date.now()));
 
     FetchEvent();
     FetchMessages();

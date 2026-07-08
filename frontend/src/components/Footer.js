@@ -5,11 +5,12 @@ import {
   AppBar,
   BottomNavigation,
   BottomNavigationAction,
+  Badge,
 } from "@mui/material";
 import RoleContext from "./useRole";
 
 const Footer = () => {
-  const { role } = useContext(RoleContext);
+  const { role, unreadCount } = useContext(RoleContext);
   const [value, setValue] = useState(0);
   const [items, setItems] = useState([]);
   const navigate = useNavigate();
@@ -18,7 +19,15 @@ const Footer = () => {
     <BottomNavigationAction
       key={item.id}
       label={item.shortLabel}
-      icon={item.icon}
+      icon={
+        item.route === "notifications" ? (
+          <Badge badgeContent={unreadCount} color="error" overlap="circular">
+            {item.icon}
+          </Badge>
+        ) : (
+          item.icon
+        )
+      }
       route={item.route}
     />
   );

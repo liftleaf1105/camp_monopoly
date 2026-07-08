@@ -17,6 +17,8 @@ const RoleContext = createContext({
   setBuildings: () => {},
   filteredBuildings: [],
   setFilteredBuildings: () => {},
+  unreadCount: 0,
+  setUnreadCount: () => {},
 });
 
 export default RoleContext;

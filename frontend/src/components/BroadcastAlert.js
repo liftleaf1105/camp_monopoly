@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Snackbar, Alert, AlertTitle } from "@mui/material";
+import { Dialog, IconButton, Box, Typography } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { socket } from "../websocket";
 import RoleContext from "./useRole";
 
@@ -7,10 +8,10 @@ const BroadcastAlert = () => {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState({});
   const [queue, setQueue] = useState([]);
-  const { role, roleId, setPhase } = useContext(RoleContext);
+  const { role, roleId, setPhase, setUnreadCount } = useContext(RoleContext);
 
   const handleClose = (event, reason) => {
-    if (reason === "clickaway") return;
+    if (reason === "backdropClick") return;
     setOpen(false);
   };
 
@@ -29,16 +30,19 @@ const BroadcastAlert = () => {
       Number(String(role).match(/(?:team|第)(\d{1,2})/i)?.[1]);
     const broadcastLevel = currentTeamId || viewerLevel;
 
+    const enqueue = (msg) => {
+      setQueue((messages) => [...messages, msg]);
+      setUnreadCount((count) => count + 1);
+    };
+
     const handleBroadcast = (args) => {
-      // console.log(args.level, roleId);
-      // console.log(args);
       const isTargeted = args.targetTeamId !== undefined;
       const shouldShow = isTargeted
         ? currentTeamId === Number(args.targetTeamId)
         : broadcastLevel >= Number(args.level || 0);
 
       if (shouldShow) {
-        setQueue((messages) => [...messages, args]);
+        enqueue(args);
         console.log("broadcast", args);
       } else {
         console.log("broadcast ignored", {
@@ -52,13 +56,10 @@ const BroadcastAlert = () => {
     };
 
     const handlePhase = (phase) => {
-      setQueue((messages) => [
-        ...messages,
-        {
-          title: `Phase Changed to ${phase}`,
-          description: "",
-        },
-      ]);
+      enqueue({
+        title: `Phase Changed to ${phase}`,
+        description: "",
+      });
       setPhase(phase);
       console.log("phase", phase);
     };
@@ -70,35 +71,75 @@ const BroadcastAlert = () => {
       socket.off("broadcast", handleBroadcast);
       socket.off("phase", handlePhase);
     };
-  }, [role, roleId, setPhase]);
+  }, [role, roleId, setPhase, setUnreadCount]);
 
-  const broadcastType = (level) => {
-    console.log(level);
-    if (level === null || level === undefined) return "info";
-    else if (level >= 100) return "error";
-    else if (level >= 10) return "warning";
-    else return "info";
+  const accentColor = (level) => {
+    if (level === null || level === undefined) return "#2196f3";
+    else if (level >= 100) return "#f44336";
+    else if (level >= 10) return "#EFA53A";
+    else return "#2196f3";
   };
 
   return (
-    <Snackbar
+    <Dialog
+      fullScreen
       open={open}
       onClose={handleClose}
-      sx={{ marginTop: 15 }}
-      anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      PaperProps={{
+        sx: {
+          backgroundColor: "rgba(0, 0, 0, 0.88)",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          p: 3,
+        },
+      }}
     >
-      <Alert
-        onClose={handleClose}
-        sx={{ width: "100%" }}
-        severity={broadcastType(message.level)}
-        elevation={6}
-        variant="filled"
+      <IconButton
+        onClick={() => setOpen(false)}
+        aria-label="close"
+        sx={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          color: "#fff",
+          border: "1px solid rgba(255,255,255,0.4)",
+        }}
       >
-        <AlertTitle>{String(message.title)}</AlertTitle>
-        {String(message.description)} <br />
-        {String(message.note || "")}
-      </Alert>
-    </Snackbar>
+        <CloseIcon />
+      </IconButton>
+
+      <Box
+        sx={{
+          textAlign: "center",
+          maxWidth: 640,
+          width: "100%",
+          borderTop: `6px solid ${accentColor(message.level)}`,
+          borderRadius: 2,
+          backgroundColor: "rgba(255,255,255,0.06)",
+          px: { xs: 3, md: 6 },
+          py: { xs: 4, md: 6 },
+        }}
+      >
+        <Typography
+          variant="h3"
+          sx={{ fontWeight: 700, mb: 2, wordBreak: "break-word" }}
+        >
+          {String(message.title || "")}
+        </Typography>
+        {message.description ? (
+          <Typography variant="h6" sx={{ mb: 1, wordBreak: "break-word" }}>
+            {String(message.description)}
+          </Typography>
+        ) : null}
+        {message.note ? (
+          <Typography variant="body1" sx={{ opacity: 0.85 }}>
+            {String(message.note)}
+          </Typography>
+        ) : null}
+      </Box>
+    </Dialog>
   );
 };
 
