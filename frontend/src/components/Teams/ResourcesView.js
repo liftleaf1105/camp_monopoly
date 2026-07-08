@@ -24,6 +24,30 @@ import RoleContext from "../useRole";
 import axios from "../axios";
 import TeamSelect from "../TeamSelect";
 
+const loveConversion = [
+  { qty: 1, discount: "5%" },
+  { qty: 2, discount: "7.50%" },
+  { qty: 3, discount: "10%" },
+  { qty: 4, discount: "12.50%" },
+  { qty: 5, discount: "15%" },
+  { qty: 6, discount: "16.50%" },
+  { qty: 7, discount: "18%" },
+  { qty: 8, discount: "19.50%" },
+  { qty: 9, discount: "21%" },
+  { qty: 10, discount: "22.50%" },
+  { qty: 11, discount: "24%" },
+  { qty: 12, discount: "25.50%" },
+  { qty: 13, discount: "27%" },
+  { qty: 14, discount: "28.50%" },
+  { qty: 15, discount: "30%" },
+];
+
+const LOVE_GROUPS_PER_ROW = 4;
+const loveConversionRows = [];
+for (let i = 0; i < loveConversion.length; i += LOVE_GROUPS_PER_ROW) {
+  loveConversionRows.push(loveConversion.slice(i, i + LOVE_GROUPS_PER_ROW));
+}
+
 const ResourcesView = () => {
   let flag = false;
   const [team, setTeam] = useState(-1);
@@ -169,16 +193,87 @@ const ResourcesView = () => {
             </TableContainer>
 
 
-            <Box sx={{ display: "flex", justifyContent: "center" }}>
-              <img
-                src="/love.jpg"
-                alt="Map"
-                style={{
-                  maxWidth: "100%",
+            <Box sx={{ marginTop: "40px" }}>
+              <Typography
+                variant="h6"
+                align="center"
+                sx={{
+                  fontWeight: 500,
+                  marginBottom: "10px",
                   userSelect: "none",
-                  marginTop: "20px",
                 }}
-              />
+              >
+                總召的愛
+              </Typography>
+              <TableContainer>
+                <Table size="small" aria-label="love conversion table">
+                  <TableHead>
+                    <TableRow>
+                      {Array.from({ length: LOVE_GROUPS_PER_ROW }).map(
+                        (_, groupIndex) => (
+                          <React.Fragment key={groupIndex}>
+                            <TableCell
+                              align="center"
+                              sx={{ py: 0.5 }}
+                              style={{ fontWeight: 800, userSelect: "none" }}
+                            >
+                              持有數量
+                            </TableCell>
+                            <TableCell
+                              align="center"
+                              sx={{
+                                py: 0.5,
+                                borderRight:
+                                  groupIndex < LOVE_GROUPS_PER_ROW - 1
+                                    ? "1px solid rgba(0,0,0,0.12)"
+                                    : "none",
+                              }}
+                              style={{ fontWeight: 800, userSelect: "none" }}
+                            >
+                              過路費減免量
+                            </TableCell>
+                          </React.Fragment>
+                        )
+                      )}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {loveConversionRows.map((row, rowIndex) => (
+                      <TableRow key={rowIndex}>
+                        {Array.from({ length: LOVE_GROUPS_PER_ROW }).map(
+                          (_, groupIndex) => {
+                            const item = row[groupIndex];
+                            return (
+                              <React.Fragment key={groupIndex}>
+                                <TableCell
+                                  align="center"
+                                  sx={{ py: 0.5 }}
+                                  style={{ userSelect: "none" }}
+                                >
+                                  {item ? item.qty : ""}
+                                </TableCell>
+                                <TableCell
+                                  align="center"
+                                  sx={{
+                                    py: 0.5,
+                                    borderRight:
+                                      groupIndex < LOVE_GROUPS_PER_ROW - 1
+                                        ? "1px solid rgba(0,0,0,0.12)"
+                                        : "none",
+                                  }}
+                                  style={{ userSelect: "none" }}
+                                >
+                                  {item ? item.discount : ""}
+                                </TableCell>
+                              </React.Fragment>
+                            );
+                          }
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Box>
           </Paper>
         
