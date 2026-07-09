@@ -9,13 +9,11 @@ import CurrencyExchangeIcon from "@mui/icons-material/CurrencyExchange";
 import EventIcon from "@mui/icons-material/Event";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import MapIcon from "@mui/icons-material/Map";
-import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 import CalculateIcon from '@mui/icons-material/Calculate';
 import CollectionsIcon from "@mui/icons-material/Collections";
 import StyleIcon from "@mui/icons-material/Style";
-import SavingsIcon from "@mui/icons-material/Savings";
-import LocalAtmIcon from "@mui/icons-material/LocalAtm";
+import FunctionsIcon from "@mui/icons-material/Functions";
 
 export const NavBarItems = [
   {
@@ -67,13 +65,6 @@ export const NavBarItems = [
     shortLabel: "ResourcesView",
     route: "resourcesView",
   }
-  // {
-  //   id: 11,
-  //   icon: <AccountBalanceIcon />,
-  //   label: "Bank",
-  //   shortLabel: "Bank",
-  //   route: "bank",
-  // },
 ];
 
 export const NPCItems = [
@@ -105,20 +96,6 @@ export const NPCItems = [
     shortLabel: "Card",
     route: "card",
   },
-  {
-    id: 8,
-    icon: <SavingsIcon />,
-    label: "Bank",
-    shortLabel: "BankTransfer",
-    route: "banktransfer",
-  },
-  // {
-  //   id: 11,
-  //   icon: <AccountBalanceIcon />,
-  //   label: "Bank",
-  //   shortLabel: "Bank",
-  //   route: "bank",
-  // }
   // {
   //   id: 14,
   //   icon: <QuizIcon />,
@@ -144,20 +121,6 @@ export const adminItems = [
     route: "event",
   },
   {
-    id: 9,
-    icon: <LocalAtmIcon />,
-    label: "Interest",
-    shortLabel: "Interest",
-    route: "interest",
-  },
-  // {
-  //   id: 11,
-  //   icon: <AccountBalanceIcon />,
-  //   label: "Bank",
-  //   shortLabel: "Bank",
-  //   route: "bank",
-  // },
-  {
     id: 12,
     icon: <BuildIcon />,
     label: "Team Info",
@@ -179,7 +142,14 @@ export const adminItems = [
     route: "broadcast",
   },
   {
-    id: 16, 
+    id: 19,
+    icon: <FunctionsIcon />,
+    label: "Accounting",
+    shortLabel: "Accounting",
+    route: "accounting",
+  },
+  {
+    id: 16,
     icon: <CalculateIcon />,
     label: "SetResources",
     shortLabel: "SetResources",

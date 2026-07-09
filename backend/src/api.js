@@ -684,45 +684,6 @@ router.post("/sell", async (req, res) => {
   res.status(200).json({ message: "Sell successful" });
 });
 
-router.post("/bankTransfer", async (req, res) => {
-  const {targetTeam, dollar} = req.body;
-  const team = await Team.findOne({
-    id: targetTeam
-  });
-
-  team.money -= dollar;
-  team.bank += dollar;
-  await team.save();
-
-  res.json("Success").status(200);
-});
-
-router.post ("/bankControl", async (req, res) => {
-  const {targetTeam, dollar} = req.body;
-  const team = await Team.findOne({
-    id: targetTeam
-  });
-
-  team.bank += dollar;
-  await team.save();
-
-  res.json("Success").status(200);
-});
-
-router.post("/interest", async(req, res) => {
-  const {rate} = req.body;
-  const teams = await Team.find();
-
-  for (let i = 0; i < teams.length; i++) {
-    teams[i].bank = Math.round(teams[i].bank * Number(rate));
-    await teams[i].save();
-
-    console.log(`team ${teams[i].teamname} bank: ${teams[i].bank}`);
-  }
-
-  res.json("Success").status(200);
-});
-
 const eventDefinitions = [
   {
     id: 1,
@@ -787,7 +748,10 @@ router.post("/reset", async(req, res) =>{
     // price.upgrade) that would make a full-document .save() throw.
     await Team.updateMany(
       {},
-      { $set: { money: 40000, bank: 0, "resources.eecoin": 0, "resources.love": 0 } }
+      {
+        $set: { money: 40000, "resources.eecoin": 0, "resources.love": 0 },
+        $unset: { bank: "", deposit: "" },
+      }
     );
     await Resource.updateMany({}, { $set: { price: 10000 } });
     await Land.updateMany({}, { $set: { owner: 0, level: 0 } });
@@ -1130,32 +1094,46 @@ router.post("/soldout", async (req, res) => {
   res.json("Success").status(200);
 });
 
-router.post("/deposit", async (req, res) => {
-  const { id, dollar } = req.body;
-  const team = await Team.find({ id: id });
-  team[0].money -= dollar;
-  team[0].deposit += dollar;
-  await team[0].save();
-  res.json("Success").status(200);
-});
-
 router.post("/accounting", async (req, res) => {
   const teams = await Team.find().sort({ id: 1 });
+  const resourcePrices = await Resource.find().sort({ id: 1 });
+  const lovePrice =
+    resourcePrices.find((resource) => resource.id === 0)?.price || 0;
+  const eecoinPrice =
+    resourcePrices.find((resource) => resource.id === 1)?.price || 0;
+  const results = [];
+
   for (let i = 0; i < teams.length; i++) {
     const lands = await Land.find({ owner: teams[i].id });
-    let total = 0;
+    let propertyValue = 0;
     for (let i = 0; i < lands.length; i++) {
-      total +=
+      propertyValue +=
         (lands[i].price.buy + lands[i].price.upgrade * (lands[i].level - 1)) *
         0.9;
     }
-    if (teams[i].deposit >= 0) teams[i].money += total + teams[i].deposit;
-    else teams[i].money += total + teams[i].deposit * 1.3;
+    propertyValue = Math.round(propertyValue);
+    const cash = Math.round(teams[i].money);
+    const resourceValue =
+      (teams[i].resources?.love || 0) * lovePrice +
+      (teams[i].resources?.eecoin || 0) * eecoinPrice;
 
-    teams[i].deposit = 0;
+    results.push({
+      teamId: teams[i].id,
+      teamname: teams[i].teamname,
+      cash,
+      resourceValue,
+      propertyValue,
+      total: cash + resourceValue + propertyValue,
+    });
+
+    teams[i].money += propertyValue;
     await teams[i].save();
+    await Land.updateMany(
+      { owner: teams[i].id },
+      { $set: { owner: 0, level: 0 } }
+    );
   }
-  res.json("Success").status(200);
+  res.status(200).json({ message: "Success", results });
 });
 
 router.post("/rob", async (req, res) => {

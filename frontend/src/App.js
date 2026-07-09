@@ -20,7 +20,7 @@ import Event from "./components/admin/Event";
 import Resources from "./components/NPC/Resources";
 import Additional from "./components/admin/Additional";
 import SetOccupation from "./components/admin/SetOccupation";
-import Bank from "./components/admin/Bank";
+import Accounting from "./components/admin/Accounting";
 import Bankrupt from "./components/admin/Bankrupt";
 import PermissionDenied from "./components/PermissionDenied";
 import Footer from "./components/Footer";
@@ -38,8 +38,7 @@ import SetResources from "./components/admin/SetResources";
 import Help from "./components/Help";
 import ResourcesView from "./components/Teams/ResourcesView";
 import StageDisplay from "./components/StageDisplay";
-import BankTransfer from "./components/NPC/BankTransfer";
-import Interest from "./components/admin/Interest";
+import AccountingResult from "./components/admin/AccountingResult";
 // import SetPrices from "./components/admin/Resources";
 // import Resource from "../../backend/models/resource";
 // // import { socket, SocketContext } from "./websocket";
@@ -154,8 +153,6 @@ const App = () => {
               <Route path="setownership" element={<SetOwnership />} />
               <Route path="transfer" element={<Transfer />} />
               <Route path="card" element={<Card />} />
-              <Route path="banktransfer" element={<BankTransfer />} />
-              <Route path="interest" element={<Interest />} />
               <Route path="setshop" element={<SetShopLevel />} />
               <Route path="random" element={<Random />} />
               <Route path="event" element={<Event />} />
@@ -164,7 +161,8 @@ const App = () => {
               <Route path="setoccupation" element={<SetOccupation />} />
               <Route path="permission" element={<PermissionDenied />} />
               <Route path="loading" element={<Loading />} />
-              <Route path="bank" element={<Bank />} />
+              <Route path="accounting" element={<Accounting />} />
+              <Route path="accounting-result" element={<AccountingResult />} />
               <Route path="bankrupt" element={<Bankrupt />} />
               <Route path="broadcast" element={<Broadcast />} />
               <Route path="setdice" element={<SetDice />} />
