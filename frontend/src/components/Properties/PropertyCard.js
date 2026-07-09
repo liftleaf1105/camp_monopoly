@@ -42,6 +42,9 @@ const PropertyCard = ({
   price,
   rent,
   buffed,
+  variant = "list",
+  gridRow,
+  gridColumn,
 }) => {
   const [open, setOpen] = useState(false);
   const [buy, setBuy] = useState(0);
@@ -106,8 +109,41 @@ const PropertyCard = ({
     setOpen(false);
   };
 
+  const cellColor = colorData || "rgb(170,170,170)";
+
   return (
     <>
+      {variant === "map" ? (
+        <Box
+          ref={ref}
+          onClick={handleView}
+          sx={{
+            gridColumn,
+            gridRow,
+            aspectRatio: "1 / 1",
+            border: "1px solid rgba(0,0,0,0.15)",
+            borderTop: `5px solid ${cellColor}`,
+            borderRadius: 1,
+            backgroundColor: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: type === "Building" ? "pointer" : "default",
+            userSelect: "none",
+            transition: "transform 0.12s ease, box-shadow 0.12s ease",
+            "&:hover": {
+              transform: "scale(1.08)",
+              boxShadow: 4,
+              zIndex: 1,
+              borderColor: cellColor,
+            },
+          }}
+        >
+          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+            {id}
+          </Typography>
+        </Box>
+      ) : (
       <Paper
         elevation={2}
         key={id}
@@ -119,6 +155,12 @@ const PropertyCard = ({
           paddingTop: 0.5,
           paddingBottom: 0.5,
           minWidth: "100%",
+          cursor: type === "Building" ? "pointer" : "default",
+          transition: "box-shadow 0.15s ease, transform 0.15s ease",
+          "&:hover": {
+            boxShadow: 6,
+            transform: "translateY(-2px)",
+          },
         }}
         onClick={handleView}
       >
@@ -179,6 +221,7 @@ const PropertyCard = ({
           )}
         </Grid>
       </Paper>
+      )}
       <Modal
         open={open}
         onClose={handleClose}
