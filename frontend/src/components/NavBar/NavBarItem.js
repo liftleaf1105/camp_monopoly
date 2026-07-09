@@ -52,13 +52,6 @@ export const NavBarItems = [
     route: "map",
   },
   {
-    id: 17,
-    icon: <CollectionsIcon />,
-    label: "Stage Display",
-    shortLabel: "Display",
-    route: "stage-display",
-  },
-  {
     id: 11,
     icon: <AutoGraphIcon />, //resource
     label: "ResourcesView",
@@ -95,6 +88,13 @@ export const NPCItems = [
     label: "Card",
     shortLabel: "Card",
     route: "card",
+  },
+  {
+    id: 17,
+    icon: <CollectionsIcon />,
+    label: "Stage Display",
+    shortLabel: "Display",
+    route: "stage-display",
   },
   // {
   //   id: 14,

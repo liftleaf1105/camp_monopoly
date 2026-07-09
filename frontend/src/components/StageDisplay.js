@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -12,10 +13,12 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import CollectionsIcon from "@mui/icons-material/Collections";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import ImageIcon from "@mui/icons-material/Image";
 import TuneIcon from "@mui/icons-material/Tune";
+import RoleContext from "./useRole";
 
 const STAGE_COUNT = 42;
 const IMAGE_EXTENSIONS = ["jpg", "png", "webp", "jpeg"];
@@ -28,6 +31,8 @@ const getImageSrc = (stage, extIndex) =>
   }`;
 
 const StageDisplay = () => {
+  const navigate = useNavigate();
+  const { roleId, setNavBarId } = useContext(RoleContext);
   const [selectedStage, setSelectedStage] = useState(() => {
     const saved = Number(localStorage.getItem(STORAGE_KEY));
     return saved >= 1 && saved <= STAGE_COUNT ? saved : "";
@@ -48,11 +53,19 @@ const StageDisplay = () => {
       : getImageSrc(selectedStage, imageExtIndex);
 
   useEffect(() => {
+    if (roleId < 50) return;
     if (selectedStage === "") return;
     localStorage.setItem(STORAGE_KEY, String(selectedStage));
     setImageExtIndex(0);
     setImageMissing(false);
-  }, [selectedStage]);
+  }, [roleId, selectedStage]);
+
+  useEffect(() => {
+    if (roleId < 50) {
+      navigate("/permission");
+      setNavBarId(0);
+    }
+  }, [roleId, navigate, setNavBarId]);
 
   const handleImageError = () => {
     if (imageExtIndex + 1 < IMAGE_EXTENSIONS.length) {
@@ -75,6 +88,15 @@ const StageDisplay = () => {
     setSelectedStage(event.target.value);
     setShowPicker(false);
   };
+
+  const handleCloseDisplay = async () => {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      await document.exitFullscreen();
+    }
+    navigate("/");
+  };
+
+  if (roleId < 50) return null;
 
   return (
     <Box
@@ -201,6 +223,14 @@ const StageDisplay = () => {
           aria-label="fullscreen"
         >
           <FullscreenIcon />
+        </IconButton>
+        <IconButton
+          color="inherit"
+          size="small"
+          onClick={handleCloseDisplay}
+          aria-label="close display"
+        >
+          <CloseIcon />
         </IconButton>
       </Box>
 
