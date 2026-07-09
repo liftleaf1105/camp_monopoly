@@ -44,7 +44,7 @@ const LoveConversionTable = () => (
         userSelect: "none",
       }}
     >
-      總召的愛
+      贖罪券
     </Typography>
     <TableContainer>
       <Table size="small" aria-label="love conversion table">

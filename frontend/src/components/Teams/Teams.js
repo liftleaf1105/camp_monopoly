@@ -112,7 +112,7 @@ const Teams = () => {
                               ? Math.round(team[column.id])
                               : `${Math.round(team[column.id])} (破產)`
                             : column.id === "resources"
-                              ? `總召的愛: ${team[column.id].love}, EE幣: ${team[column.id].eecoin}`
+                              ? `贖罪券: ${team[column.id].love}, EE幣: ${team[column.id].eecoin}`
                               : team[column.id]
                               } */}
                             {
@@ -121,7 +121,7 @@ const Teams = () => {
                                   ? Math.round(team[column.id])
                                   : `${Math.round(team[column.id])} (破產)`
                                 : column.id === "resources"
-                                  ? `總召的愛: ${team[column.id].love}, EE幣: ${team[column.id].eecoin}`
+                                  ? `贖罪券: ${team[column.id].love}, EE幣: ${team[column.id].eecoin}`
                                   : column.id === "asset"
                                     ? Math.round(team.money) + team.resources.love * resourcePrice[0] + team.resources.eecoin * resourcePrice[1]
                                     : team[column.id]
