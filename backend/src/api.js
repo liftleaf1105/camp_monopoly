@@ -896,6 +896,7 @@ router
         description: eventDefinition.description,
         note,
         level: 0,
+        fullscreen: true,
       };
 
       req.io.emit("broadcast", eventAnnouncement);

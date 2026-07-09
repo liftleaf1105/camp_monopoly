@@ -56,6 +56,12 @@ const Event = () => {
   };
 
   useEffect(() => {
+    if (!APIResponse) return undefined;
+    const timer = setTimeout(() => setAPIResponse(""), 4000);
+    return () => clearTimeout(timer);
+  }, [APIResponse]);
+
+  useEffect(() => {
     if (role !== "admin") {
       navigate("/permission");
     }
