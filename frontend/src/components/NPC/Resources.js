@@ -23,6 +23,7 @@ import SendIcon from "@mui/icons-material/Send";
 import RoleContext from "../useRole";
 import axios from "../axios";
 import TeamSelect from "../TeamSelect";
+import LoveConversionTable from "../LoveConversionTable";
 
 const Resources = () => {
   let flag = false;
@@ -30,6 +31,10 @@ const Resources = () => {
   const [mode, setMode] = useState(0);
   const [resourceId, setResourceId] = useState(-1);
   const [number, setNumber] = useState(0);
+  const [controlTeam, setControlTeam] = useState(-1);
+  const [controlMode, setControlMode] = useState(0);
+  const [controlResourceId, setControlResourceId] = useState(-1);
+  const [controlNumber, setControlNumber] = useState(0);
   const { roleId, teams, setTeams, setNavBarId, resources, setResources } =
     useContext(RoleContext); // eslint-disable-line no-unused-vars
 
@@ -108,6 +113,38 @@ const Resources = () => {
       setNumber(0);
     }
     setTeam(team);
+  };
+
+  const handleControlClick = async () => {
+    const amount = Number(controlNumber);
+
+    if (
+      controlTeam === -1 ||
+      controlResourceId === -1 ||
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      alert("Please select team/resource and enter a valid amount");
+      return;
+    }
+
+    const payload = {
+      teamId: controlTeam,
+      resourceId: controlResourceId,
+      number: amount,
+      mode: controlMode, // 0 for -, 1 for +
+    };
+
+    await axios.post("/controlResource", payload);
+    navigate("/teams");
+    setNavBarId(2);
+  };
+
+  const handleControlTeam = (team) => {
+    if (team === 0) {
+      setControlNumber(0);
+    }
+    setControlTeam(team);
   };
 
   const updatePrices = async () => {
@@ -287,17 +324,100 @@ const Resources = () => {
             </TableContainer>
 
 
-            <Box sx={{ display: "flex", justifyContent: "center" }}>
-              <img
-                src="/love.jpg"
-                alt="Map"
-                style={{
-                  maxWidth: "100%",
-                  userSelect: "none",
-                  marginTop: "20px",
-                }}
-              />
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                marginTop: "40px",
+              }}
+            >
+              <Typography component="h1" variant="h5">
+                Resource Control
+              </Typography>
+
+              <FormControl
+                variant="standard"
+                sx={{ minWidth: 250, marginTop: 2 }}
+              >
+                <TeamSelect
+                  label="Team"
+                  team={controlTeam}
+                  handleTeam={handleControlTeam}
+                  hasZero={false}
+                />
+              </FormControl>
+
+              <FormControl
+                variant="standard"
+                sx={{ minWidth: 250, marginTop: 2 }}
+              >
+                <InputLabel id="control-resource">Resource</InputLabel>
+                <Select
+                  value={controlResourceId}
+                  labelId="control-resource"
+                  onChange={(e) => {
+                    setControlResourceId(e.target.value);
+                  }}
+                >
+                  <MenuItem value={-1}>Select Resource</MenuItem>
+                  {resources.map((resource, index) => (
+                    <MenuItem value={index} key={index}>
+                      {resource.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl
+                variant="standard"
+                sx={{ minWidth: 250, marginTop: 2 }}
+              >
+                <InputLabel id="control-mode">Mode</InputLabel>
+                <Select
+                  value={controlMode}
+                  labelId="control-mode"
+                  onChange={(e) => {
+                    setControlMode(e.target.value);
+                  }}
+                >
+                  <MenuItem value={0}>-</MenuItem>
+                  <MenuItem value={1}>+</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl
+                variant="standard"
+                sx={{ minWidth: 250, marginTop: 2 }}
+              >
+                <TextField
+                  required
+                  label="enter the amount"
+                  id="control-number"
+                  type="text"
+                  onChange={(e) => {
+                    setControlNumber(e.target.value);
+                  }}
+                />
+              </FormControl>
+
+              <FormControl
+                variant="standard"
+                sx={{ minWidth: 250, marginTop: 2 }}
+              >
+                <Button
+                  variant="contained"
+                  disabled={controlTeam === -1 || controlNumber === -1}
+                  onClick={handleControlClick}
+                  fullWidth
+                  sx={{ marginTop: 2 }}
+                >
+                  <SendIcon/>
+                </Button>
+              </FormControl>
             </Box>
+
+            <LoveConversionTable />
           </Paper>
         
       </>
