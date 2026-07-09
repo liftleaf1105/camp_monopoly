@@ -1,29 +1,11 @@
 import { createTheme } from "@mui/material";
 
-// const palette = {
-//   primary: {
-//     main: "#009be5",
-//   },
-//   secondary: {
-//     main: "#006db3",
-//   },
-//   error: {
-//     main: "#f44336",
-//   },
-//   success: {
-//     main: "#4caf50",
-//   },
-//   warning: {
-//     main: "#ffeb3b",
-//   },
-// };
-
 const palette = {
   primary: {
-    main: "#4348CE",
+    main: "#5A4638",
   },
   secondary: {
-    main: "#EFA53A",
+    main: "#C98345",
   },
   error: {
     main: "#f44336",
@@ -32,7 +14,7 @@ const palette = {
     main: "#4caf50",
   },
   warning: {
-    main: "#EFA53A",
+    main: "#C98345",
   },
 };
 

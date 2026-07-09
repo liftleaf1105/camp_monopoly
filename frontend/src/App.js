@@ -78,10 +78,8 @@ const App = () => {
 
   const location = useLocation();
 
-  // On login (or refresh while logged in), compute how many notifications
-  // already exist on the server that the user hasn't seen yet (createdAt >
-  // lastSeen). This is a single background fetch, so it doesn't slow rendering.
-  // Live notifications received over the socket keep incrementing on top.
+  // On login (or refresh while logged in), only major events count as unread.
+  // Regular popups still show live, but they should not light up the badge.
   useEffect(() => {
     if (role === "") {
       setUnreadCount(0);
@@ -90,34 +88,11 @@ const App = () => {
     const computeBaselineUnread = async () => {
       try {
         const lastSeen = Number(localStorage.getItem("notifLastSeen")) || 0;
-        const nowSec = Date.now() / 1000;
-        const [{ data: notifs }, { data: broadcasts }] = await Promise.all([
-          axios.get("/notifications"),
-          axios.get("/broadcast"),
-        ]);
-        let count = 0;
-        (notifs || []).forEach((n) => {
-          // skip expired temporary notifications (no longer shown)
-          if (
-            n.type === "temporary" &&
-            n.duration > 0 &&
-            nowSec - n.createdAt > n.duration
-          )
-            return;
-          // notification createdAt is in seconds
-          if (n.createdAt * 1000 > lastSeen) count += 1;
-        });
-        (broadcasts || []).forEach((b) => {
-          // broadcast createdAt is in milliseconds; only count what this role sees
-          if (
-            Number(roleId) >= Number(b.level || 0) &&
-            new Date(b.createdAt).getTime() > lastSeen
-          )
-            count += 1;
-        });
-        setUnreadCount(count);
+        const { data: event } = await axios.get("/event");
+        const eventCreatedAt = Number(event?.createdAt) || 0;
+        setUnreadCount(event?.id > 0 && eventCreatedAt > lastSeen ? 1 : 0);
       } catch (e) {
-        console.error("Failed to compute unread notifications", e);
+        console.error("Failed to compute unread event notifications", e);
       }
     };
     computeBaselineUnread();

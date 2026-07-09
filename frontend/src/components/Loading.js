@@ -11,7 +11,7 @@ const Loading = () => {
       mx="auto"
       minHeight="100vh"
     >
-      <ReactLoading type="spinningBubbles" color="#006db3" />
+      <ReactLoading type="spinningBubbles" color="#5A4638" />
     </Box>
   );
 };

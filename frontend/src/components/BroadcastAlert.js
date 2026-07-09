@@ -40,7 +40,9 @@ const BroadcastAlert = () => {
 
     const enqueue = (msg) => {
       setQueue((messages) => [...messages, msg]);
-      setUnreadCount((count) => count + 1);
+      if (msg.fullscreen) {
+        setUnreadCount((count) => count + 1);
+      }
     };
 
     const handleBroadcast = (args) => {
@@ -89,10 +91,10 @@ const BroadcastAlert = () => {
   };
 
   const accentColor = (level) => {
-    if (level === null || level === undefined) return "#2196f3";
+    if (level === null || level === undefined) return "#5A4638";
     else if (level >= 100) return "#f44336";
-    else if (level >= 10) return "#EFA53A";
-    else return "#2196f3";
+    else if (level >= 10) return "#C98345";
+    else return "#5A4638";
   };
 
   if (message.fullscreen) {
@@ -163,7 +165,6 @@ const BroadcastAlert = () => {
     <Snackbar
       open={open}
       onClose={handleClose}
-      autoHideDuration={8000}
       anchorOrigin={{ vertical: "top", horizontal: "center" }}
       sx={{ top: { xs: 72, md: 80 } }}
     >

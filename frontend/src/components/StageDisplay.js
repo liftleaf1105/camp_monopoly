@@ -133,7 +133,7 @@ const StageDisplay = () => {
             alignItems: "center",
             justifyContent: "center",
             background:
-              "linear-gradient(135deg, #101010 0%, #1f2933 52%, #111827 100%)",
+              "linear-gradient(135deg, #15110E 0%, #2A211B 52%, #1D1713 100%)",
           }}
         >
           <Container maxWidth="sm">
@@ -241,7 +241,7 @@ const StageDisplay = () => {
             top: { xs: 72, sm: 76 },
             right: 12,
             width: { xs: "calc(100vw - 24px)", sm: 320 },
-            bgcolor: "rgba(16, 24, 39, 0.94)",
+            bgcolor: "rgba(42, 33, 27, 0.94)",
             border: "1px solid rgba(255, 255, 255, 0.16)",
             borderRadius: 1,
             p: 2,
@@ -261,7 +261,7 @@ const StageDisplay = () => {
                 PaperProps: {
                   sx: {
                     maxHeight: "min(70vh, 420px)",
-                    bgcolor: "#111827",
+                    bgcolor: "#1D1713",
                     color: "#fff",
                   },
                 },

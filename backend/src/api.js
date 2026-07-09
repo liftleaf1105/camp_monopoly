@@ -733,6 +733,7 @@ const emptyEvent = {
   title: "無",
   description: "",
   note: "",
+  createdAt: 0,
 };
 
 router.get("/allEvents", async (req, res) => {
@@ -850,8 +851,11 @@ router
       pair.value = id;
       await pair.save();
 
+      const createdAt = Date.now();
+
       if (eventRecord) {
         eventRecord.note = note;
+        eventRecord.createdAt = createdAt;
         await eventRecord.save();
       }
 
@@ -861,6 +865,7 @@ router
         note,
         level: 0,
         fullscreen: true,
+        createdAt,
       };
 
       req.io.emit("broadcast", eventAnnouncement);
@@ -891,6 +896,7 @@ router
       .json({
         ...eventDefinition,
         note: eventRecord ? eventRecord.note : "",
+        createdAt: eventRecord ? eventRecord.createdAt || 0 : 0,
       })
       .status(200);
   });
