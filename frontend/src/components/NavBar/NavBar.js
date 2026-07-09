@@ -15,7 +15,7 @@ import { NavBarItems, NPCItems, adminItems } from "./NavBarItem";
 import { NavBarStyles } from "./NavStyle";
 import RoleContext from "../useRole";
 
-const Navbar = ({ open }) => {
+const Navbar = ({ open, onClose }) => {
   // const [navBarId, setNavBarId] = useState(0);
   const { role, roleId, setNavBarId, unreadCount } = useContext(RoleContext);
   const navigate = useNavigate();
@@ -23,6 +23,7 @@ const Navbar = ({ open }) => {
   const handleClick = (index, name) => {
     navigate(name);
     setNavBarId(index);
+    onClose();
   };
 
   const isSelected = (route) => {
@@ -57,7 +58,7 @@ const Navbar = ({ open }) => {
       anchor="left"
       open={open}
       onOpen={() => {}}
-      onClose={() => {}}
+      onClose={onClose}
     >
       <Toolbar align="center">{role}</Toolbar>
       <Divider />

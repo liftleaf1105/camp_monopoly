@@ -63,7 +63,7 @@ export const NavBarItems = [
     icon: <AutoGraphIcon />, //resource
     label: "ResourcesView",
     shortLabel: "ResourcesView",
-    route: "resourcesView",
+    route: "resourcesview",
   }
 ];
 

@@ -34,6 +34,9 @@ const Header = () => {
   const handleChange = () => {
     setOpen(!open);
   };
+  const handleCloseNav = () => {
+    setOpen(false);
+  };
 
   const handleLogin = () => {
     // console.log(role);
@@ -97,10 +100,9 @@ const Header = () => {
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           <IconButton
             onClick={handleChange}
-            sx={{ visibility: { xs: "visible", md: "hidden" } }}
           >
             <MenuIcon sx={{ color: "#fff" }} />
-            <NavBar open={open} />
+            <NavBar open={open} onClose={handleCloseNav} />
           </IconButton>
           <Typography variant="h1">MONOPOLY</Typography>
           <Button
