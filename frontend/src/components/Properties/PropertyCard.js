@@ -120,14 +120,21 @@ const PropertyCard = ({
           sx={{
             gridColumn,
             gridRow,
-            aspectRatio: "1 / 1",
+            width: "100%",
+            height: "100%",
+            minWidth: 0,
+            minHeight: 0,
             border: "1px solid rgba(0,0,0,0.15)",
-            borderTop: `5px solid ${cellColor}`,
+            borderTop: `4px solid ${cellColor}`,
             borderRadius: 1,
             backgroundColor: "#fff",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            textAlign: "center",
+            overflow: "hidden",
+            p: 0.25,
             cursor: type === "Building" ? "pointer" : "default",
             userSelect: "none",
             transition: "transform 0.12s ease, box-shadow 0.12s ease",
@@ -139,9 +146,25 @@ const PropertyCard = ({
             },
           }}
         >
-          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+          <Typography
+            variant="subtitle2"
+            sx={{ fontWeight: 700, lineHeight: 1.1 }}
+          >
             {id}
           </Typography>
+          {name ? (
+            <Typography
+              variant="caption"
+              sx={{
+                lineHeight: 1.05,
+                mt: 0.25,
+                fontSize: "0.62rem",
+                wordBreak: "break-word",
+              }}
+            >
+              {name}
+            </Typography>
+          ) : null}
         </Box>
       ) : (
       <Paper

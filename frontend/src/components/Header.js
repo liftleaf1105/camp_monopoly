@@ -99,7 +99,7 @@ const Header = () => {
             onClick={handleChange}
             sx={{ visibility: { xs: "visible", md: "hidden" } }}
           >
-            <MenuIcon />
+            <MenuIcon sx={{ color: "#fff" }} />
             <NavBar open={open} />
           </IconButton>
           <Typography variant="h1">MONOPOLY</Typography>

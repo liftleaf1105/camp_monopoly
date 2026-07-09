@@ -1,12 +1,16 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Stack, Paper, Box } from "@mui/material";
+import { Stack, Paper, Box, useMediaQuery } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import RoleContext from "../useRole";
 import PropertyCard from "./PropertyCard";
+import BoardMap from "./BoardMap";
 import Loading from "../Loading";
 import axios from "../axios";
 
 const Properties = () => {
+  const theme = useTheme();
+  const isWide = useMediaQuery(theme.breakpoints.up("md"));
   const { buildings, setBuildings } = useContext(RoleContext);
   const [scrolled, setScrolled] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams(); // eslint-disable-line no-unused-vars
@@ -58,6 +62,8 @@ const Properties = () => {
 
   if (buildings.length === 0) {
     return <Loading />;
+  } else if (isWide) {
+    return <BoardMap />;
   } else {
     return (
       <>
@@ -78,9 +84,9 @@ const Properties = () => {
           <Stack
             spacing={2}
             sx={{
-              marginLeft: "5vw",
-              marginRight: "5vw",
-              width: "90vw",
+              width: "90%",
+              maxWidth: 900,
+              mx: "auto",
             }}
           >
             {cardComponents}

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { NPCItems, NavBarItems, adminItems } from "./NavBar/NavBarItem";
 import {
   AppBar,
@@ -11,9 +11,16 @@ import RoleContext from "./useRole";
 
 const Footer = () => {
   const { role, unreadCount } = useContext(RoleContext);
-  const [value, setValue] = useState(0);
   const [items, setItems] = useState([]);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const matchIndex = items.findIndex((item) =>
+    item.route === "/"
+      ? pathname === "/"
+      : pathname === `/${item.route}` || pathname.startsWith(`/${item.route}/`)
+  );
+  const value = matchIndex === -1 ? false : matchIndex;
 
   const mapping = (item) => (
     <BottomNavigationAction
@@ -50,7 +57,6 @@ const Footer = () => {
         showLabels
         value={value}
         onChange={(event, newValue) => {
-          setValue(newValue);
           navigate(items[newValue].route);
         }}
       >

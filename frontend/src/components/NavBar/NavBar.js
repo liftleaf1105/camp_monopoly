@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Toolbar,
   Typography,
@@ -17,12 +17,17 @@ import RoleContext from "../useRole";
 
 const Navbar = ({ open }) => {
   // const [navBarId, setNavBarId] = useState(0);
-  const { role, roleId, navBarId, setNavBarId, unreadCount } =
-    useContext(RoleContext);
+  const { role, roleId, setNavBarId, unreadCount } = useContext(RoleContext);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const handleClick = (index, name) => {
     navigate(name);
     setNavBarId(index);
+  };
+
+  const isSelected = (route) => {
+    if (route === "/") return pathname === "/";
+    return pathname === `/${route}` || pathname.startsWith(`/${route}/`);
   };
 
   const mapping = (item) => (
@@ -30,7 +35,7 @@ const Navbar = ({ open }) => {
       button
       key={item.id}
       onClick={() => handleClick(item.id, item.route)}
-      selected={navBarId === item.id}
+      selected={isSelected(item.route)}
     >
       <ListItemIcon sx={NavBarStyles.icons}>
         {item.route === "notifications" ? (
