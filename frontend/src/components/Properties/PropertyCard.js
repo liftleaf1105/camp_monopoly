@@ -53,13 +53,22 @@ const PropertyCard = ({
 
   const colorData = type === "Building" ? colors[type][area] : colors[type];
   // console.log(ref);
+  const getIconStyle = (color) => ({
+    color,
+    ...(variant === "map" ? { fontSize: "clamp(10px, 1vw, 14px)" } : {}),
+  });
   let levelIcon = [];
   for (let i = 0; i < 3; i++) {
     if (i < level) {
-      levelIcon.push(<HomeRoundedIcon style={{ color: "#63f74f" }} key={i} />);
+      levelIcon.push(
+        <HomeRoundedIcon style={getIconStyle("#63f74f")} key={i} />
+      );
     } else {
       levelIcon.push(
-        <HomeRoundedIcon style={{ color: "rgb(160,160,160)" }} key={i} />
+        <HomeRoundedIcon
+          style={getIconStyle("rgb(160,160,160)")}
+          key={i}
+        />
       );
     }
   }
@@ -67,14 +76,16 @@ const PropertyCard = ({
   if (hawkEye > 0 && hawkEye !== id) {
     //affected
     levelIcon.push(
-      <VisibilityIcon style={{ color: "rgb(225,100,100)" }} key={3} />
+      <VisibilityIcon style={getIconStyle("rgb(225,100,100)")} key={3} />
     );
   } else if (hawkEye > 0 && hawkEye === id) {
     //self
-    levelIcon.push(<VisibilityIcon style={{ color: "#63f74f" }} key={3} />);
+    levelIcon.push(
+      <VisibilityIcon style={getIconStyle("#63f74f")} key={3} />
+    );
   } else if (hawkEye >= 0) {
     levelIcon.push(
-      <VisibilityIcon style={{ color: "rgb(160,160,160)" }} key={3} />
+      <VisibilityIcon style={getIconStyle("rgb(160,160,160)")} key={3} />
     );
   }
 
@@ -122,6 +133,7 @@ const PropertyCard = ({
             gridRow,
             width: "100%",
             height: "100%",
+            boxSizing: "border-box",
             minWidth: 0,
             minHeight: 0,
             border: "1px solid rgba(0,0,0,0.15)",
@@ -148,7 +160,7 @@ const PropertyCard = ({
         >
           <Typography
             variant="subtitle2"
-            sx={{ fontWeight: 700, lineHeight: 1.1 }}
+            sx={{ fontWeight: 700, lineHeight: 1.1, fontSize: "0.875rem" }}
           >
             {id}
           </Typography>
@@ -164,6 +176,23 @@ const PropertyCard = ({
             >
               {name}
             </Typography>
+          ) : null}
+          {type === "Building" ? (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 0.15,
+                width: "100%",
+                mt: 0.15,
+                lineHeight: 0,
+                overflow: "hidden",
+                flexShrink: 0,
+              }}
+            >
+              {levelIcon}
+            </Box>
           ) : null}
         </Box>
       ) : (
