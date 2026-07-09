@@ -37,6 +37,7 @@ const AddMoney = () => {
 
   const [building, setBuilding] = useState(-1);
   const [price, setPrice] = useState({});
+  const [buildingOwner, setBuildingOwner] = useState(0);
 
   const [showPreview, setShowPreview] = useState(false);
   const { roleId, filteredBuildings, setNavBarId } = useContext(RoleContext);
@@ -77,9 +78,11 @@ const AddMoney = () => {
       const { data } = await axios.get("/land/" + building);
       setBuilding(building);
       setPrice(data.price);
+      setBuildingOwner(data.owner);
     } else {
       setBuilding(-1);
       setPrice({});
+      setBuildingOwner(0);
     }
     // console.log(data);
   };
@@ -199,6 +202,15 @@ const AddMoney = () => {
     }
   }, [team, amount]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const canUpgrade =
+    team !== -1 &&
+    price.upgrade &&
+    Number(team) === Number(buildingOwner);
+  const canBuy =
+    team !== -1 &&
+    price.buy &&
+    Number(team) !== Number(buildingOwner);
+
   return (
     <Container component="main" maxWidth="xs">
       <Box
@@ -278,7 +290,7 @@ const AddMoney = () => {
           >
             <Button
               variant="contained"
-              disabled={team === -1 || !price.buy}
+              disabled={!canBuy}
               sx={{ marginBottom: 1, width: 80 }}
               onClick={() => {
                 handleAmount(-1 * price.buy);
@@ -289,7 +301,7 @@ const AddMoney = () => {
             </Button>
             <Button
               variant="contained"
-              disabled={team === -1 || !price.upgrade}
+              disabled={!canUpgrade}
               sx={{ marginBottom: 1, width: 80 }}
               onClick={() => {
                 handleAmount(-1 * price.upgrade);

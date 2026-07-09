@@ -10,144 +10,56 @@ import Broadcast from "../models/broadcast.js";
 import Resource from "../models/resource.js";
 const router = express.Router();
 
-const buffBuildings2 = async (building_1, building_2) => {
-  for (let i = 0; i < 3; i++) {
-    if (building_1.buffed !== 1) building_1.rent[i] *= 1.5;
-    if (building_2.buffed !== 1) building_2.rent[i] *= 1.5;
-  }
-  building_1.buffed = 1;
-  building_2.buffed = 1;
-  await building_1.save();
-  await building_2.save();
+const SERIES_BONUS_GROUPS = [
+  [2, 3, 4],
+  [6, 7, 8],
+  [14, 15, 16],
+  [18, 19, 20],
+  [26, 27, 28],
+  [34, 35, 36],
+  [39, 40, 41],
+];
+
+const SERIES_BONUS_MULTIPLIERS = [1, 1.25, 1.5];
+
+const getBaseRent = (land) => {
+  const buyPrice = land.price && land.price.buy;
+  if (!buyPrice) return land.rent;
+  return [0.2, 0.4, 1].map((multiplier) =>
+    Math.round(buyPrice * multiplier)
+  );
 };
 
-const debuffBuildings2 = async (building_1, building_2) => {
-  building_1.buffed = 0;
-  building_2.buffed = 0;
-  for (let i = 0; i < 3; i++) {
-    building_1.rent[i] /= 1.5;
-    building_2.rent[i] /= 1.5;
-  }
+const getSeriesBonusGroup = (landId) =>
+  SERIES_BONUS_GROUPS.find((group) => group.includes(landId));
 
-  await building_1.save();
-  await building_2.save();
+const getSeriesBonusLevel = (groupLands, land) => {
+  if (land.owner === 0) return 0;
+  const sameOwnerCount = groupLands.filter(
+    (groupLand) => groupLand.owner === land.owner
+  ).length;
+  if (sameOwnerCount === 3) return 2;
+  if (sameOwnerCount === 2) return 1;
+  return 0;
 };
 
-const buffBuildings3 = async (building_1, building_2, building_3) => {
-  for (let i = 0; i < 3; i++) {
-    if (building_1.buffed === 1) building_1.rent[i] /= 1.5;
-    if (building_2.buffed === 1) building_2.rent[i] /= 1.5;
-    if (building_3.buffed === 1) building_3.rent[i] /= 1.5;
-    building_1.rent[i] *= 2;
-    building_2.rent[i] *= 2;
-    building_3.rent[i] *= 2;
-  }
-  building_1.buffed = 2;
-  building_2.buffed = 2;
-  building_3.buffed = 2;
-  await building_1.save();
-  await building_2.save();
-  await building_3.save();
-};
-
-const debuffBuildings3 = async (building_1, building_2, building_3) => {
-  building_1.buffed = 0;
-  building_2.buffed = 0;
-  building_3.buffed = 0;
-  for (let i = 0; i < 3; i++) {
-    building_1.rent[i] /= 2;
-    building_2.rent[i] /= 2;
-    building_3.rent[i] /= 2;
+const recalculateSeriesBonus = async (groupIds) => {
+  const groupLands = await Land.find({ id: { $in: groupIds } }).sort({ id: 1 });
+  if (groupLands.length !== groupIds.length) {
+    throw new Error(`Series bonus group is incomplete: ${groupIds.join(",")}`);
   }
 
-  // await building_1.save();
-  // await building_2.save();
-  // await building_3.save();
-};
-
-const buffings2 = async (buildings, num1, num2) => {
-  if (buildings[num1].owner === buildings[num2].owner) {
-    console.log("0");
-    buffBuildings2(buildings[num1], buildings[num2]);
-  } else if (
-    buildings[num1].buffed === 1 &&
-    buildings[num1].owner !== buildings[num2].owner
-  ) {
-    debuffBuildings2(buildings[num1], buildings[num2]);
-  }
-};
-
-const buffings3 = async (buildings, num1, num2, num3) => {
-  if (
-    buildings[num1].owner === buildings[num2].owner &&
-    buildings[num2].owner === buildings[num3].owner
-  ) {
-    console.log("1");
-    buffBuildings3(buildings[num1], buildings[num2], buildings[num3]);
-  } else if (
-    buildings[num1].owner === buildings[num2].owner &&
-    buildings[num2].owner !== buildings[num3].owner &&
-    buildings[num1].owner !== 0
-  ) {
-    console.log("2");
-    if (buildings[num1].buffed === 2) {
-      debuffBuildings3(buildings[num1], buildings[num2], buildings[num3]);
-    }
-    if (buildings[num3].buffed === 1) {
-      buildings[num3].buffed = 0;
-      for (let i = 0; i < 3; i++) {
-        buildings[num3].rent[i] /= 1.5;
-      }
-    }
-    buffBuildings2(buildings[num1], buildings[num2]);
-    await buildings[num3].save();
-  } else if (
-    buildings[num2].owner === buildings[num3].owner &&
-    buildings[num1].owner !== buildings[num2].owner &&
-    buildings[num2].owner !== 0
-  ) {
-    console.log("3");
-    if (buildings[num2].buffed === 2) {
-      debuffBuildings3(buildings[num1], buildings[num2], buildings[num3]);
-    }
-    if (buildings[num1].buffed === 1) {
-      buildings[num1].buffed = 0;
-      for (let i = 0; i < 3; i++) {
-        buildings[num1].rent[i] /= 1.5;
-      }
-    }
-    buffBuildings2(buildings[num2], buildings[num3]);
-    await buildings[num1].save();
-  } else if (
-    buildings[num1].owner === buildings[num3].owner &&
-    buildings[num2].owner !== buildings[num1].owner &&
-    buildings[num1].owner !== 0
-  ) {
-    console.log("4");
-    if (buildings[num1].buffed === 2) {
-      debuffBuildings3(buildings[num1], buildings[num2], buildings[num3]);
-    }
-    if (buildings[num2].buffed === 1) {
-      buildings[num2].buffed = 0;
-      for (let i = 0; i < 3; i++) {
-        buildings[num2].rent[i] /= 1.5;
-      }
-    }
-    buffBuildings2(buildings[num1], buildings[num3]);
-    await buildings[num2].save();
-  } else if (
-    buildings[num1].owner !== buildings[num2].owner &&
-    buildings[num2].owner !== buildings[num3].owner
-  ) {
-    console.log("5");
-    if (buildings[num1].buffed === 1 && buildings[num2].buffed === 1) {
-      debuffBuildings2(buildings[num1], buildings[num2]);
-    } else if (buildings[num2].buffed === 1 && buildings[num3].buffed === 1) {
-      debuffBuildings2(buildings[num2], buildings[num3]);
-    } else if (buildings[num1].buffed === 1 && buildings[num3].buffed === 1) {
-      debuffBuildings2(buildings[num1], buildings[num3]);
-    }
-  }
+  await Promise.all(
+    groupLands.map(async (land) => {
+      const bonusLevel = getSeriesBonusLevel(groupLands, land);
+      const multiplier = SERIES_BONUS_MULTIPLIERS[bonusLevel];
+      land.buffed = bonusLevel;
+      land.rent = getBaseRent(land).map((rent) =>
+        Math.round(rent * multiplier)
+      );
+      await land.save();
+    })
+  );
 };
 
 router.get("/", (req, res) => {
@@ -1380,39 +1292,23 @@ router.post("/ownership", async (req, res) => {
 });
 
 router.post("/calcbonus", async (req, res) => {
-  const { teamId, land, level } = req.body;
-  const buildings = await Land.find({}).sort({ id: 1 });
-  console.log(req.body);
-  const targetBuilding = await Land.find({ name: land });
+  try {
+    const { land } = req.body;
+    console.log(req.body);
+    const targetBuilding = await Land.findOne({ name: land });
+    if (!targetBuilding) {
+      res.status(404).json({ error: "Land not found" });
+      return;
+    }
 
-  if (targetBuilding[0].id === 2 || targetBuilding[0].id === 3) {
-    buffings2(buildings, 1, 2);
-  } else if (targetBuilding[0].id === 9 || targetBuilding[0].id === 10) {
-    buffings2(buildings, 8, 9);
-  } else if (
-    targetBuilding[0].id === 13 ||
-    targetBuilding[0].id === 14 ||
-    targetBuilding[0].id === 15
-  ) {
-    buffings3(buildings, 12, 13, 14);
-  } else if (targetBuilding[0].id === 22 || targetBuilding[0].id === 23) {
-    buffings2(buildings, 21, 22);
-  } else if (
-    targetBuilding[0].id === 28 ||
-    targetBuilding[0].id === 29 ||
-    targetBuilding[0].id === 30
-  ) {
-    buffings3(buildings, 27, 28, 29);
-  } else if (
-    targetBuilding[0].id === 34 ||
-    targetBuilding[0].id === 35 ||
-    targetBuilding[0].id === 36
-  ) {
-    buffings3(buildings, 33, 34, 35);
-  } else if (targetBuilding[0].id === 39 || targetBuilding[0].id === 40) {
-    buffings2(buildings, 38, 39);
+    const groupIds = getSeriesBonusGroup(targetBuilding.id);
+    if (groupIds) await recalculateSeriesBonus(groupIds);
+
+    res.json("Success").status(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to calculate series bonus" });
   }
-  res.json("Success").status(200);
 });
 
 router.post("/acquire", async (req, res) => {

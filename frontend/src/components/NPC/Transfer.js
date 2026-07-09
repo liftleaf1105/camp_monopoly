@@ -26,6 +26,19 @@ import RoleContext from "../useRole";
 import axios from "../axios";
 import TeamSelect from "../TeamSelect";
 
+const INDULGENCE_DISCOUNTS = [
+  0, 0.05, 0.075, 0.1, 0.125, 0.15, 0.165, 0.18,
+  0.195, 0.21, 0.225, 0.24, 0.255, 0.27, 0.285, 0.3,
+];
+
+const getIndulgenceDiscount = (count) => {
+  const cappedCount = Math.min(Math.max(count, 0), 15);
+  return INDULGENCE_DISCOUNTS[cappedCount];
+};
+
+const formatDiscountPercent = (discount) =>
+  (discount * 100).toFixed(2).replace(/\.?0+$/, "");
+
 const Transfer = () => {
   const [from, setFrom] = useState(-1);
   const [fromData, setFromData] = useState({});
@@ -41,6 +54,8 @@ const Transfer = () => {
   const [finalData, setFinalData] = useState({});
 
   const [amount, setAmount] = useState(0);
+  const [discountCount, setDiscountCount] = useState(0);
+  const [discountBaseAmount, setDiscountBaseAmount] = useState(null);
 
   const [errorMessage, setErrorMessage] = useState("");
   const [error, setError] = useState(false);
@@ -52,86 +67,40 @@ const Transfer = () => {
     buildingData.owner !== undefined &&
     Number(to) !== Number(buildingData.owner);
 
+  const resetDiscount = () => {
+    setDiscountCount(0);
+    setDiscountBaseAmount(null);
+  };
+
   const handleFrom = async (from) => {
+    resetDiscount();
     const { data } = await axios.get("/team/" + from);
     // console.log(data);
     setFromData(data);
     setFrom(from);
   };
 
-  const handleDiscount = async (from) => {
-    // const { data } = await axios.get("/team/" + from);
-    // // console.log(data);
-    // setFromData(data);
-    // setFrom(from);
-
-    // console.log(fromData.resources.love);
-
-    if(fromData.resources.love === 0) {
-      setErrorMessage("No love, No discount");
-    }
-    else if(fromData.resources.love === 1) {
-      setAmount(amount * 0.95);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love === 2) {
-      setAmount(amount * 0.925);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love === 3) {
-      setAmount(amount * 0.9);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love === 4) {
-      setAmount(amount * 0.875);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love === 5) {
-      setAmount(amount * 0.85);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love === 6) {
-      setAmount(amount * 0.835);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love === 7) {
-      setAmount(amount * 0.82);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love >= 8) {
-      setAmount(amount * 0.805);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love >= 9) {
-      setAmount(amount * 0.79);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love >= 10) {
-      setAmount(amount * 0.775);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love >= 11) {
-      setAmount(amount * 0.76);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love >= 12) {
-      setAmount(amount * 0.745);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love >= 13) {
-      setAmount(amount * 0.73);
-      setErrorMessage("Discounted");
-    }
-    else if(fromData.resources.love >= 14) {
-      setAmount(amount * 0.715);
-      setErrorMessage("Discounted");
-    }else if(fromData.resources.love >= 15) {
-      setAmount(amount * 0.7);
-      setErrorMessage("Discounted");
+  const handleDiscount = () => {
+    const currentAmount = Number(amount);
+    if (!Number.isFinite(currentAmount) || currentAmount <= 0) {
+      setErrorMessage("Please enter a valid number");
+      setError(true);
+      return;
     }
 
+    const baseAmount = discountBaseAmount ?? currentAmount;
+    const nextCount = discountCount + 1;
+    const displayCount = Math.min(nextCount, 15);
+    const displayCountLabel = nextCount > 15 ? "15+" : String(displayCount);
+    const discount = getIndulgenceDiscount(nextCount);
 
-    console.log(amount);
+    setDiscountBaseAmount(baseAmount);
+    setDiscountCount(nextCount);
+    setAmount(Math.round(baseAmount * (1 - discount)));
+    setErrorMessage(
+      `Discounted: ${displayCountLabel} indulgence${displayCount > 1 ? "s" : ""} (${formatDiscountPercent(discount)}% off)`
+    );
+    setError(false);
   };
 
   const handleTo = async (to) => {
@@ -178,6 +147,7 @@ const Transfer = () => {
   };
 
   const handleBuilding = async (building) => {
+    resetDiscount();
     if (building > 0) {
       const { data } = await axios.get("/land/" + building);
       setBuilding(building);
@@ -218,6 +188,7 @@ const Transfer = () => {
   };
 
   const handlePercentMoney = async (percent) => {
+    resetDiscount();
     // const money = fromData.money; //find the team's money
     const { data } = await axios.get("/getRent", {
       params: { building: building },
@@ -226,6 +197,7 @@ const Transfer = () => {
   };
 
   const handleEqualMoney = () => {
+    resetDiscount();
     let money_from = fromData.money; //first team (using the card)
     let money_to = toData.money; //second team(passive)
     let temp = Math.round((money_from - money_to) / 2);
@@ -461,6 +433,7 @@ const Transfer = () => {
             onChange={(e) => {
               const re = /^[0-9\b]+$/;
               if (e.target.value === "" || re.test(e.target.value)) {
+                resetDiscount();
                 setAmount(e.target.value ? e.target.value : "");
                 setErrorMessage("");
                 setError(false);
@@ -519,7 +492,7 @@ const Transfer = () => {
             fullWidth
             sx={{ marginTop: 0 }}
           >
-            love discount
+            indulgence discount
           </Button>
 
           <Button
