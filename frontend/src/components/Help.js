@@ -42,37 +42,37 @@ return (
                     <Button
                         variant="contained"
                         sx={{ marginBottom: 1, width: 120 }}
-                        onClick={() => window.open("https://docs.google.com/document/d/1lmCTCfiQkok6AxNVji6PVGJ5dotwqzq7xNzDdWjORXM/edit", "_blank")}
+                        onClick={() => window.open("https://docs.google.com/document/d/112Ov2wWO-H4Xu87MtIAqP4dJLNHqWoiwh7QcN6CAVK0/edit?usp=sharing", "_blank")}
                     >
                         隊輔須知
                     </Button>
                     <Button
                         variant="contained"
                         sx={{ marginBottom: 1, width: 120 }}
-                        onClick={() => window.open("https://docs.google.com/document/d/1hJ7guJ6CndYnsPq2GxAT8Z7rgyGOIWGgSjC96mGk2mU/edit", "_blank")}
+                        onClick={() => window.open("https://docs.google.com/document/d/11GH9yheoKv36xBBZXWQOGbXJMi2xVw4ukxkk7VAgpwI/edit?usp=sharing", "_blank")}
                     >
                         NPC<br/>共同SOP
                     </Button>
                     <Button
                         variant="contained"
                         sx={{ marginBottom: 1, width: 120 }}
-                        onClick={() => window.open("https://docs.google.com/document/d/15w5tjrIHBJKwxPWuWpEKgcbYXX4ipqzR8VbaAuqoLOc/edit?usp=drive_link", "_blank")}
+                        onClick={() => window.open("https://docs.google.com/document/d/1bjAB2_eAinl0ZAPEh7A5PLLGFcJAS4C9/edit?usp=sharing&ouid=106682632482462425429&rtpof=true&sd=true", "_blank")}
                     >
                         NPC SOP
                     </Button>
                     <Button
                         variant="contained"
                         sx={{ marginBottom: 1, width: 120 }}
-                        onClick={() => window.open("https://docs.google.com/spreadsheets/d/1J9-TY4O-zkLXBxuQDyMl87b6VFY9hGrt/edit?usp=drive_link&ouid=113752778377958120846&rtpof=true&sd=true", "_blank")}
+                        onClick={() => window.open("https://docs.google.com/spreadsheets/d/1Z5mC5BacueOd4XLLTMuWiILmZ0m0d_ac/edit?usp=sharing&ouid=106682632482462425429&rtpof=true&sd=true", "_blank")}
                     >
                         技能卡
                     </Button>
                     <Button
                         variant="contained"
                         sx={{ marginBottom: 1, width: 120 }}
-                        onClick={() => window.open("https://docs.google.com/spreadsheets/d/1uOwBtqZWkz8dfhK-TYxJgbKdcwu1G4Hb5SYgd-DmB_M/edit?gid=0#gid=0", "_blank")}
+                        onClick={() => window.open("https://docs.google.com/spreadsheets/d/1tjoStZyLjO7kl39F8XMwOIc_UNDhhZt6s6Eif1652C8/edit?usp=sharing", "_blank")}
                     >
-                        陽春銀行
+                        Backup
                     </Button>
                 </Box>
         </Box>

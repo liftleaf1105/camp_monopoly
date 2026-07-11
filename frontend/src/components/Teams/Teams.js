@@ -117,9 +117,9 @@ const Teams = () => {
                               } */}
                             {
                               column.id === "money"
-                                ? Math.round(team[column.id]) > 0
-                                  ? Math.round(team[column.id])
-                                  : `${Math.round(team[column.id])} (破產)`
+                                ? Math.round(team[column.id]) < 0
+                                  ? `${Math.round(team[column.id])} (破產)`
+                                  : Math.round(team[column.id])
                                 : column.id === "resources"
                                   ? `贖罪券: ${team[column.id].love}, EE幣: ${team[column.id].eecoin}`
                                   : column.id === "asset"

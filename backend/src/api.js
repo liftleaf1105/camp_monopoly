@@ -111,7 +111,7 @@ async function updateTeam(team, moneyChanged, io, saved) {
     else ratio = 1.5;
   }
   let final = Math.round(teamObj.money + moneyChanged * ratio);
-  if (saved && final < 0) {
+  if (saved && teamObj.money >= 0 && final < 0) {
     const message = {
       title: "破產!!!",
       description: teamObj.teamname,
@@ -1075,16 +1075,37 @@ router.post("/series", async (req, res) => {
 
 router.post("/soldout", async (req, res) => {
   const { id, building } = req.body;
-  const team = await Team.find({ id: id });
-  const land = await Land.find({ id: building });
-  team[0].money +=
-    Math.round(
-      (land[0].price.buy + land[0].price.upgrade * (land[0].level - 1)) * 0.08
-    ) * 10;
-  land[0].level = 0;
-  land[0].owner = 0;
-  await team[0].save();
-  await land[0].save();
+  const teamId = parseInt(id, 10);
+  const landId = parseInt(building, 10);
+
+  if (Number.isNaN(teamId) || Number.isNaN(landId)) {
+    res.status(400).json({ error: "Invalid team or building id" });
+    return;
+  }
+
+  const team = await Team.findOne({ id: teamId });
+  const land = await Land.findOne({ id: landId });
+
+  if (!team || !land) {
+    res.status(404).json({ error: "Team or building not found" });
+    return;
+  }
+
+  if (land.owner !== teamId) {
+    res.status(400).json({ error: "Building is not owned by this team" });
+    return;
+  }
+
+  const propertyValue = land.price.buy + land.price.upgrade * (land.level - 1);
+  team.money += Math.round(propertyValue * 0.5);
+  land.level = 0;
+  land.owner = 0;
+  await team.save();
+  await land.save();
+
+  const groupIds = getSeriesBonusGroup(land.id);
+  if (groupIds) await recalculateSeriesBonus(groupIds);
+
   res.json("Success").status(200);
 });
 
