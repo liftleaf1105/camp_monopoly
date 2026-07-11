@@ -444,20 +444,36 @@ router.get("/teamRich", async (req, res) => {
 router.post("/checkPropertyCost", async (req, res) => {
   const { team, building, mode } = req.body;
 
-  const targetBuilding = await Land.find({ id: building });
-  const targetTeam = await Team.find({ id: team });
-  const surplus = targetTeam[0].money;
+  const teamId = Number(team);
+  const targetBuilding = await Land.findOne({ id: Number(building) });
+  const targetTeam = await Team.findOne({ id: teamId });
+  if (!targetBuilding || !targetTeam) {
+    res.status(400).json({ message: "Invalid team or building" });
+    return;
+  }
+
+  const surplus = targetTeam.money;
   if (mode === "Buy") {
-    const checkPropertyCost = targetBuilding[0].price.buy;
-    if (surplus >= checkPropertyCost) res.json({ message: "OK" }).status(200);
+    if (targetBuilding.owner !== 0) {
+      res.status(200).json({ message: "Building already has owner" });
+      return;
+    }
+    const checkPropertyCost = targetBuilding.price.buy;
+    if (surplus >= checkPropertyCost) res.status(200).json({ message: "OK" });
     else {
-      res.json({ message: "FUCK" }).status(200);
+      res.status(200).json({ message: "FUCK" });
     }
   } else if (mode === "Upgrade") {
-    const checkPropertyCost = targetBuilding[0].price.upgrade;
+    if (targetBuilding.owner !== teamId) {
+      res.status(200).json({ message: "Only owner can upgrade" });
+      return;
+    }
+    const checkPropertyCost = targetBuilding.price.upgrade;
     console.log(checkPropertyCost);
-    if (surplus >= checkPropertyCost) res.json({ message: "OK" }).status(200);
-    else res.json({ message: "FUCK" }).status(200);
+    if (surplus >= checkPropertyCost) res.status(200).json({ message: "OK" });
+    else res.status(200).json({ message: "FUCK" });
+  } else {
+    res.status(400).json({ message: "Invalid mode" });
   }
 });
 
@@ -1124,7 +1140,7 @@ router.post("/accounting", async (req, res) => {
     for (let i = 0; i < lands.length; i++) {
       propertyValue +=
         (lands[i].price.buy + lands[i].price.upgrade * (lands[i].level - 1)) *
-        0.9;
+        0.5;
     }
     propertyValue = Math.round(propertyValue);
     const cash = Math.round(teams[i].money);

@@ -17,6 +17,7 @@ import {
   Paper,
   Grid,
   TableBody,
+  FormHelperText,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
@@ -202,14 +203,25 @@ const AddMoney = () => {
     }
   }, [team, amount]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const hasBuildingOwner = Number(buildingOwner) > 0;
+  const selectedTeamOwnsBuilding =
+    team !== -1 &&
+    Number(team) === Number(buildingOwner);
+  const selectedTeamBlockedByOwner =
+    team !== -1 && hasBuildingOwner && !selectedTeamOwnsBuilding;
   const canUpgrade =
     team !== -1 &&
     price.upgrade &&
-    Number(team) === Number(buildingOwner);
+    selectedTeamOwnsBuilding;
   const canBuy =
     team !== -1 &&
     price.buy &&
-    Number(team) !== Number(buildingOwner);
+    !hasBuildingOwner;
+  const canSubmitAndSetOwnership =
+    team !== -1 &&
+    amount !== "0" &&
+    building !== -1 &&
+    !selectedTeamBlockedByOwner;
 
   return (
     <Container component="main" maxWidth="xs">
@@ -311,6 +323,11 @@ const AddMoney = () => {
               Upgrade
             </Button>
           </Box>
+          {selectedTeamBlockedByOwner ? (
+            <FormHelperText error={true}>
+              此地已有地主，只有第{buildingOwner}小隊可以升級。
+            </FormHelperText>
+          ) : null}
           {/* <Box
             sx={{
               display: "flex",
@@ -360,11 +377,7 @@ const AddMoney = () => {
               <Box display="flex" flexDirection="row" justifyContent="center">
                 <Button
                   variant="contained"
-                  disabled={
-                    team === -1 ||
-                    amount === "0" ||
-                    building === -1 
-                  }
+                  disabled={!canSubmitAndSetOwnership}
                   onClick={handleSubmitAndSetOwnership}
                   fullWidth
                 >

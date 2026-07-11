@@ -45,7 +45,7 @@ const Accounting = () => {
           variant="subtitle2"
           sx={{ color: "gray", marginTop: 1, textAlign: "center" }}
         >
-          Add 90% of each team's property value back to money.
+          Add 50% of each team's property value back to money.
         </Typography>
         <Button
           variant="contained"

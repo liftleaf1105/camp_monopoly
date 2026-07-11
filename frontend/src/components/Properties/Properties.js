@@ -16,7 +16,7 @@ const Properties = () => {
   const [searchParams, setSearchParams] = useSearchParams(); // eslint-disable-line no-unused-vars
   const id = parseInt(searchParams.get("id"));
   const refs = React.useMemo(
-    () => Array.from({ length: 41 }, (x) => React.createRef()),
+    () => Array.from({ length: 43 }, () => React.createRef()),
     []
   );
   // console.log(id);
@@ -42,8 +42,9 @@ const Properties = () => {
   }, []);
 
   useEffect(() => {
-    if (!isNaN(id) && !scrolled && refs[id].current !== null) {
-      const position = refs[id].current.getBoundingClientRect().top;
+    const targetRef = refs[id];
+    if (!isNaN(id) && !scrolled && targetRef?.current) {
+      const position = targetRef.current.getBoundingClientRect().top;
       const offset = window.innerHeight / 2;
       window.scrollTo({
         top: position - offset,
