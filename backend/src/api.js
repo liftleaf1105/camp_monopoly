@@ -185,6 +185,37 @@ const getPoorestTeams = async (count, excludedTeamIds = []) => {
     .limit(count);
 };
 
+const getPoorestTeamsByMoneyWithTies = async (count) => {
+  const teams = await Team.find().sort({ money: 1, id: 1 });
+  const selected = [];
+  let index = 0;
+
+  while (index < teams.length && selected.length < count) {
+    const money = teams[index].money;
+    const tiedTeams = teams.filter((team) => team.money === money);
+    selected.push(...tiedTeams);
+    index += tiedTeams.length;
+  }
+
+  return selected;
+};
+
+const getRichestTeamsByTotalAsset = async () => {
+  const teams = await Team.find().sort({ id: 1 });
+  const resourcePrices = await Resource.find().sort({ id: 1 });
+  const teamsWithAssets = teams.map((team) => ({
+    team,
+    totalAsset: calcTotalAsset(team, resourcePrices),
+  }));
+  const maxAsset = Math.max(
+    ...teamsWithAssets.map(({ totalAsset }) => totalAsset)
+  );
+
+  return teamsWithAssets
+    .filter(({ totalAsset }) => totalAsset === maxAsset)
+    .map(({ team }) => team);
+};
+
 const calcBaseRent = async (land) => {
   if (!land || land.owner === 0) return 0;
   if (land.type === "Building") {
@@ -193,6 +224,35 @@ const calcBaseRent = async (land) => {
   }
   const count = await Land.countDocuments({ area: land.area, owner: land.owner });
   return count * 5000;
+};
+
+const buildMoneyChange = (team, delta, role) => {
+  const normalizedDelta = Number(delta);
+  const before = Math.round(team.money);
+  return {
+    team,
+    role,
+    before,
+    delta: normalizedDelta,
+    after: before + normalizedDelta,
+  };
+};
+
+const buildMoneyChanges = (changes) => {
+  const changesByTeam = new Map();
+
+  changes.forEach(({ team, delta, role }) => {
+    const current = changesByTeam.get(team.id);
+    if (current) {
+      current.delta += delta;
+    } else {
+      changesByTeam.set(team.id, { team, delta, role });
+    }
+  });
+
+  return Array.from(changesByTeam.values()).map(({ team, delta, role }) =>
+    buildMoneyChange(team, delta, role)
+  );
 };
 
 const buildCardPreview = async ({ card, owner, target, amount, building }) => {
@@ -207,19 +267,22 @@ const buildCardPreview = async ({ card, owner, target, amount, building }) => {
   if (!ownerTeam) return { error: "Owner not found" };
 
   if (card === "Cooz") {
-    const targets = await getPoorestTeams(2, [ownerId]);
-    const total = Math.round(ownerTeam.money * 0.25);
-    const firstShare = Math.floor(total / 2);
-    const secondShare = total - firstShare;
+    const targets = await getPoorestTeamsByMoneyWithTies(2);
+    const total = Math.floor(ownerTeam.money / 4);
+    const share = Math.floor(total / targets.length);
     return {
       card,
       cardName,
       owner: ownerTeam,
       amount: total,
-      transfers: targets.map((team, index) => ({
+      transfers: targets.map((team) => ({
         target: team,
-        amount: index === 0 ? firstShare : secondShare,
+        amount: share,
       })),
+      moneyChanges: buildMoneyChanges([
+        { team: ownerTeam, delta: -total, role: "owner" },
+        ...targets.map((team) => ({ team, delta: share, role: "target" })),
+      ]),
     };
   }
 
@@ -233,12 +296,17 @@ const buildCardPreview = async ({ card, owner, target, amount, building }) => {
       owner: ownerTeam,
       target: targetTeam,
       amount: 2000,
+      moneyChanges: [
+        buildMoneyChange(ownerTeam, 2000, "owner"),
+        buildMoneyChange(targetTeam, -2000, "target"),
+      ],
     };
   }
 
   if (card === "Ayi") {
-    const targetTeam = await getRichestTeamByTotalAsset([ownerId]);
+    const targetTeam = await Team.findAndCheckValid(targetId);
     if (!targetTeam) return { error: "Target not found" };
+    if (ownerId === targetId) return { error: "Owner and Target cannot be the same" };
     if (!requestedAmount || requestedAmount <= 0)
       return { error: "Amount must be greater than 0" };
     return {
@@ -247,6 +315,9 @@ const buildCardPreview = async ({ card, owner, target, amount, building }) => {
       owner: ownerTeam,
       target: targetTeam,
       amount: requestedAmount,
+      moneyChanges: buildMoneyChanges([
+        { team: targetTeam, delta: -requestedAmount, role: "target" },
+      ]),
     };
   }
 
@@ -267,19 +338,36 @@ const buildCardPreview = async ({ card, owner, target, amount, building }) => {
       building: land,
       amount: Math.round(rent * 0.5),
       rent,
+      moneyChanges: [
+        buildMoneyChange(ownerTeam, Math.round(rent * 0.5), "owner"),
+        buildMoneyChange(targetTeam, -Math.round(rent * 0.5), "target"),
+      ],
     };
   }
 
   if (card === "Jeff") {
-    const targetTeam = await getRichestTeamByTotalAsset([ownerId]);
-    if (!targetTeam) return { error: "Target not found" };
-    const cardAmount = Math.round(targetTeam.money * 0.25);
+    const targetTeams = await getRichestTeamsByTotalAsset();
+    if (targetTeams.length === 0) return { error: "Target not found" };
+    const splitCount = targetTeams.length;
+    const payments = targetTeams.map((team) => ({
+      team,
+      amount: Math.floor(Math.floor(team.money / 4) / splitCount),
+    }));
+    const cardAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
     return {
       card,
       cardName,
       owner: ownerTeam,
-      target: targetTeam,
+      targets: targetTeams,
       amount: cardAmount,
+      moneyChanges: buildMoneyChanges([
+        { team: ownerTeam, delta: cardAmount, role: "owner" },
+        ...payments.map(({ team, amount }) => ({
+          team,
+          delta: -amount,
+          role: "target",
+        })),
+      ]),
     };
   }
 
@@ -299,6 +387,12 @@ const buildCardPreview = async ({ card, owner, target, amount, building }) => {
       building: land,
       amount: 0,
       newLevel: land.level - 1,
+      propertyChange: {
+        building: land,
+        owner: targetTeam,
+        beforeLevel: land.level,
+        afterLevel: land.level - 1,
+      },
     };
   }
 
@@ -441,42 +535,52 @@ router.get("/resourcePrice", async (req, res) => {
 router.post("/controlResource", async (req, res) => {
   const { teamId, resourceId, number, mode } = req.body;
   const team = await Team.collection.findOne({ id: teamId });
+  const amount = Number(number);
+  const controlMode = Number(mode);
 
-  if (mode === 0) {//-
+  if (controlMode === 0) {//-
     if(resourceId == 0){ //love
+      if (team.resources.love < amount) {
+        return res.status(400).json({ message: "Not enough resources" });
+      }
+
       await Team.findOneAndUpdate(
         { id: teamId },
         { 
-          resources: { love : team.resources.love - number, eecoin : team.resources.eecoin },
+          resources: { love : team.resources.love - amount, eecoin : team.resources.eecoin },
         }
       );
     }else if(resourceId == 1){ //eecoin
+      if (team.resources.eecoin < amount) {
+        return res.status(400).json({ message: "Not enough resources" });
+      }
+
       await Team.findOneAndUpdate(
         { id: teamId },
         {
-          resources: {love : team.resources.love, eecoin : team.resources.eecoin - number},
+          resources: {love : team.resources.love, eecoin : team.resources.eecoin - amount},
         }
       );
     }
-  } else if (mode === 1) {//+
+  } else if (controlMode === 1) {//+
     if(resourceId == 0){
       await Team.findOneAndUpdate(//love
         { id: teamId },
         {
-          resources: { love: team.resources.love + number, eecoin: team.resources.eecoin },
+          resources: { love: team.resources.love + amount, eecoin: team.resources.eecoin },
         }
       );
     }else if(resourceId == 1){//eecoin
       await Team.findOneAndUpdate(
         { id: teamId },
         {
-          resources: { love: team.resources.love, eecoin: team.resources.eecoin + number },
+          resources: { love: team.resources.love, eecoin: team.resources.eecoin + amount },
         }
       );
     }
   }
   
-  res.json("Success").status(200);
+  res.status(200).json("Success");
 });
 
 router.post("/updateResourcePrice", async (req, res) => {
@@ -926,54 +1030,11 @@ router.post("/card", async (req, res) => {
     return;
   }
 
-  const { card, cardName, owner, target, amount, building, transfers, newLevel } =
+  const { card, cardName, owner, target, building, newLevel, moneyChanges } =
     preview;
   const ownerId = owner.id;
 
-  if (card === "Cooz") {
-    await updateTeamMoneyDirectly(ownerId, -amount);
-    for (let i = 0; i < transfers.length; i++) {
-      const transfer = transfers[i];
-      await updateTeamMoneyDirectly(transfer.target.id, transfer.amount);
-      emitCardNotice(
-        req.io,
-        transfer.target.id,
-        ownerId,
-        cardName,
-        `你獲得${transfer.amount}元`
-      );
-    }
-  } else if (card === "Hey") {
-    await updateTeamMoneyDirectly(target.id, -amount);
-    await updateTeamMoneyDirectly(ownerId, amount);
-    emitCardNotice(req.io, target.id, ownerId, cardName, `你失去${amount}元`);
-    emitCardNotice(req.io, ownerId, ownerId, cardName, `你獲得${amount}元`);
-  } else if (card === "Ayi") {
-    await updateTeamMoneyDirectly(target.id, -amount);
-    emitCardNotice(req.io, target.id, ownerId, cardName, `你失去${amount}元`);
-  } else if (card === "GeGon") {
-    await updateTeamMoneyDirectly(target.id, -amount);
-    await updateTeamMoneyDirectly(ownerId, amount);
-    emitCardNotice(
-      req.io,
-      target.id,
-      ownerId,
-      cardName,
-      `你在${building.name}失去${amount}元`
-    );
-    emitCardNotice(
-      req.io,
-      ownerId,
-      ownerId,
-      cardName,
-      `你從${building.name}獲得${amount}元`
-    );
-  } else if (card === "Jeff") {
-    await updateTeamMoneyDirectly(target.id, -amount);
-    await updateTeamMoneyDirectly(ownerId, amount);
-    emitCardNotice(req.io, target.id, ownerId, cardName, `你失去${amount}元`);
-    emitCardNotice(req.io, ownerId, ownerId, cardName, `你獲得${amount}元`);
-  } else if (card === "Ala") {
+  if (card === "Ala") {
     const land = await Land.findOne({ id: building.id });
     land.level = newLevel;
     await land.save();
@@ -984,6 +1045,21 @@ router.post("/card", async (req, res) => {
       cardName,
       `你的${building.name}房子被拆掉一級`
     );
+  } else {
+    for (let i = 0; i < moneyChanges.length; i++) {
+      const change = moneyChanges[i];
+      if (change.delta === 0) continue;
+      await updateTeamMoneyDirectly(change.team.id, change.delta);
+      emitCardNotice(
+        req.io,
+        change.team.id,
+        ownerId,
+        cardName,
+        change.delta > 0
+          ? `你獲得${change.delta}元`
+          : `你失去${Math.abs(change.delta)}元`
+      );
+    }
   }
 
   res.json(preview).status(200);

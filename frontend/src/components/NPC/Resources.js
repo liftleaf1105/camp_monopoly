@@ -135,9 +135,18 @@ const Resources = () => {
       mode: controlMode, // 0 for -, 1 for +
     };
 
-    await axios.post("/controlResource", payload);
-    navigate("/teams");
-    setNavBarId(2);
+    try {
+      await axios.post("/controlResource", payload);
+      navigate("/teams");
+      setNavBarId(2);
+    } catch (error) {
+      if (error.response?.data?.message === "Not enough resources") {
+        alert("Not enough resources");
+        return;
+      }
+
+      console.error(error);
+    }
   };
 
   const handleControlTeam = (team) => {

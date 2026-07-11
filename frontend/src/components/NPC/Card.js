@@ -17,9 +17,11 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import KeyboardDoubleArrowDownIcon from "@mui/icons-material/KeyboardDoubleArrowDown";
 import SendIcon from "@mui/icons-material/Send";
 import StyleIcon from "@mui/icons-material/Style";
 import axios from "../axios";
+import PropertyCard from "../Properties/PropertyCard";
 import RoleContext from "../useRole";
 import TeamSelect from "../TeamSelect";
 
@@ -34,6 +36,11 @@ const cards = [
 
 const teamLabel = (id) => (id ? `第${id}小隊` : "");
 
+const formatDelta = (delta) => {
+  if (delta > 0) return `+${delta}`;
+  return String(delta);
+};
+
 const Card = () => {
   const [card, setCard] = useState("");
   const [owner, setOwner] = useState(-1);
@@ -47,7 +54,7 @@ const Card = () => {
   const navigate = useNavigate();
 
   const selectedCard = cards.find((item) => item.value === card);
-  const needsTarget = card === "Hey";
+  const needsTarget = card === "Hey" || card === "Ayi";
   const needsAmount = card === "Ayi";
   const needsBuilding = card === "GeGon" || card === "Ala";
 
@@ -129,7 +136,7 @@ const Card = () => {
     setPreview(null);
     setErrorMessage("");
     if (card !== "Ayi") setAmount("");
-    if (card !== "Hey") setTarget(-1);
+    if (card !== "Hey" && card !== "Ayi") setTarget(-1);
     if (card !== "GeGon" && card !== "Ala") setBuilding(-1);
   }, [card]);
 
@@ -154,11 +161,73 @@ const Card = () => {
 
   const Preview = () => {
     if (!preview) return null;
-    const targets = preview.transfers
-      ? preview.transfers.map((transfer) => transfer.target)
-      : preview.target
-      ? [preview.target]
-      : [];
+    const moneyChanges = preview.moneyChanges || [];
+    const propertyChange = preview.propertyChange;
+
+    const renderMoneyPreview = () => {
+      if (moneyChanges.length === 0) return null;
+
+      return (
+        <TableContainer component={Paper}>
+          <Table aria-label="card-money-preview" size="small">
+            <TableBody>
+              <TableRow>
+                <TableCell align="center">Team</TableCell>
+                {moneyChanges.map((change) => (
+                  <TableCell align="center" key={change.team.id}>
+                    {teamLabel(change.team.id)}
+                  </TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell align="center">Before</TableCell>
+                {moneyChanges.map((change) => (
+                  <TableCell align="center" key={change.team.id}>
+                    {change.before}
+                  </TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell align="center">Change</TableCell>
+                {moneyChanges.map((change) => (
+                  <TableCell align="center" key={change.team.id}>
+                    {formatDelta(change.delta)}
+                  </TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell align="center">After</TableCell>
+                {moneyChanges.map((change) => (
+                  <TableCell align="center" key={change.team.id}>
+                    {change.after}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      );
+    };
+
+    const renderPropertyPreview = () => {
+      if (!propertyChange) return null;
+
+      return (
+        <>
+          <PropertyCard
+            {...propertyChange.building}
+            level={propertyChange.beforeLevel}
+            hawkEye={-1}
+          />
+          <KeyboardDoubleArrowDownIcon />
+          <PropertyCard
+            {...propertyChange.building}
+            level={propertyChange.afterLevel}
+            hawkEye={-1}
+          />
+        </>
+      );
+    };
 
     return (
       <Box
@@ -171,53 +240,12 @@ const Card = () => {
         }}
       >
         <Typography variant="h6">Preview</Typography>
-        <TableContainer component={Paper}>
-          <Table aria-label="card-preview" size="small">
-            <TableBody>
-              <TableRow>
-                <TableCell>Card</TableCell>
-                <TableCell align="right">{preview.cardName}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Owner</TableCell>
-                <TableCell align="right">{teamLabel(preview.owner.id)}</TableCell>
-              </TableRow>
-              {targets.length > 0 ? (
-                <TableRow>
-                  <TableCell>Target</TableCell>
-                  <TableCell align="right">
-                    {targets.map((item) => teamLabel(item.id)).join(", ")}
-                  </TableCell>
-                </TableRow>
-              ) : null}
-              {preview.building ? (
-                <TableRow>
-                  <TableCell>Building</TableCell>
-                  <TableCell align="right">{preview.building.name}</TableCell>
-                </TableRow>
-              ) : null}
-              {preview.rent ? (
-                <TableRow>
-                  <TableCell>Rent</TableCell>
-                  <TableCell align="right">{preview.rent}</TableCell>
-                </TableRow>
-              ) : null}
-              {preview.newLevel !== undefined ? (
-                <TableRow>
-                  <TableCell>Level</TableCell>
-                  <TableCell align="right">
-                    {preview.building.level} &gt;&gt; {preview.newLevel}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                <TableRow>
-                  <TableCell>Amount</TableCell>
-                  <TableCell align="right">{preview.amount}</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Typography variant="body2" sx={{ marginBottom: 1, textAlign: "center" }}>
+          {preview.cardName} / {teamLabel(preview.owner.id)}
+          {preview.target ? ` / ${teamLabel(preview.target.id)}` : ""}
+          {preview.building ? ` / ${preview.building.name}` : ""}
+        </Typography>
+        {propertyChange ? renderPropertyPreview() : renderMoneyPreview()}
       </Box>
     );
   };
