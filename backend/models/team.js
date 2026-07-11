@@ -4,12 +4,20 @@ const TeamSchema = new Schema({
   id: Number,
   teamname: String,
   money: Number,
+  bankruptcyCount: { type: Number, default: 0 },
   resources: {
     love: Number,
     eecoin: Number,
   },
-  bonus: { value: Number, time: Number, duration: Number },
-  soulgem: { value: Boolean, time: Number },
+  bonus: {
+    value: { type: Number, default: 1.0 },
+    time: { type: Number, default: 0 },
+    duration: { type: Number, default: 0 },
+  },
+  soulgem: {
+    value: { type: Boolean, default: false },
+    time: { type: Number, default: 0 },
+  },
 });
 
 TeamSchema.statics.findAndCheckValid = async function (id) {

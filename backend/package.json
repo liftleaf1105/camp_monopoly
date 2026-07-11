@@ -17,7 +17,8 @@
   },
   "scripts": {
     "server": "nodemon ./src/server.js --ext js --exec babel-node",
-    "initdata": "node ./src/initdata.js"
+    "initdata": "node ./src/initdata.js",
+    "backup:sync": "node ./scripts/syncBackupOnce.js"
   },
   "type": "module"
 }
