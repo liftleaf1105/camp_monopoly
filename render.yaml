@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: eecamp-monopoly-2026
+    runtime: node
+    plan: free
+    buildCommand: yarn install-all && yarn build-frontend
+    startCommand: node index.js
+    healthCheckPath: /api
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: CI
+        value: "false"
+      - key: MONGO_URL
+        sync: false

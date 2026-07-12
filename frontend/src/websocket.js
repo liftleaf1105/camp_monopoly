@@ -2,7 +2,7 @@
 import io from "socket.io-client";
 // import { usedispatch } from "react-redux";
 
-export const socket = io(process.env.REACT_APP_WS_URL || "localhost:4000");
+export const socket = io(process.env.REACT_APP_WS_URL || window.location.origin);
 // export const SocketContext = React.createContext(socket);
 
 socket.on("connect", () => {
