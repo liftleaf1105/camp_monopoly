@@ -11,7 +11,6 @@ import Pair from "../models/pair.js";
 import Effect from "../models/effect.js";
 
 dotenv.config();
-console.log(process.env.MONGO_URL);
 
 const db = mongoose.connection;
 mongoose.connect(process.env.MONGO_URL, {
@@ -686,4 +685,5 @@ db.once("open", async () => {
   // console.log("effects created");
 
   console.log("finish saving data");
+  await mongoose.disconnect();
 });
