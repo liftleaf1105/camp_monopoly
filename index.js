@@ -16,7 +16,7 @@ const { PORT, MONGO_URL } = process.env;
 const port = PORT || 2022;
 
 db.once("open", () => {
-  console.log(`MongoDB connected at ${MONGO_URL}`);
+  console.log("MongoDB connected");
 
   const app = express();
   const server = http.createServer(app);
