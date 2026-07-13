@@ -22,7 +22,7 @@ const Teams = () => {
     // { id: "dice", label: "Dice", minWidth: "5vw", align: "center" },
     { id: "money", label: "Money", minWidth: "17vw", align: "center" },
     { id: "resources", label: "Resources", minWidth: "17vw", align: "center" },
-    { id: "asset", label: "Total Asset", minWidth: "17vw", align: "center" },
+    { id: "asset", label: "Money + Resources", minWidth: "17vw", align: "center" },
   ];
 
   const getTeams = async () => {
