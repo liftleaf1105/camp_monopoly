@@ -41,18 +41,13 @@ yarn start
 ```
 
 ### Docker
-#### Build and Push
+#### Build and Run
 ```bash
-bash scripts/build_and_push.sh
+docker compose up -d --build
 ```
 
-#### Run
-```bash
-# Simple
-docker-compose up -d
-# Pull and Run
-bash scripts/run.sh
-```
+Compose builds the web image locally; no application image is pushed to or
+pulled from Docker Hub.
 
 #### Init
 ```bash
