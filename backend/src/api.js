@@ -1279,6 +1279,16 @@ const normalizeTransferPayload = ({ from, to, dollar, IsEstate, landName }) => {
   return payload;
 };
 
+const INDULGENCE_DISCOUNTS = [
+  0, 0.05, 0.075, 0.1, 0.125, 0.15, 0.165, 0.18,
+  0.195, 0.21, 0.225, 0.24, 0.255, 0.27, 0.285, 0.3,
+];
+
+const getIndulgenceDiscount = (count) => {
+  const cappedCount = Math.min(Math.max(Math.floor(Number(count) || 0), 0), 15);
+  return INDULGENCE_DISCOUNTS[cappedCount];
+};
+
 const formatTeamName = (teamId) => `第${String(teamId).padStart(2, "0")}小隊`;
 
 const calcTransfer = async (from, to, amount, isEstate) => {
@@ -1299,7 +1309,10 @@ const calcTransfer = async (from, to, amount, isEstate) => {
 
   var FromAmount = Number(FromTeam.money);
   var ToAmount = Number(ToTeam.money);
-  var TransferAmount = Number(amount);
+  const indulgenceCount = Number(FromTeam.resources?.love) || 0;
+  const indulgenceDiscount = getIndulgenceDiscount(indulgenceCount);
+  const discountedAmount = Math.round(Number(amount) * (1 - indulgenceDiscount));
+  var TransferAmount = discountedAmount;
   const bonusValue = Number(ToTeam.bonus?.value ?? 1);
   console.log(TransferAmount, bonusValue);
   if (isEstate && bonusValue !== 0) TransferAmount *= bonusValue;
@@ -1313,7 +1326,13 @@ const calcTransfer = async (from, to, amount, isEstate) => {
     ToAmount += parseInt(Math.round(TransferAmount * 2));
   else ToAmount += TransferAmount;
   console.log({ from: FromAmount, to: ToAmount });
-  return { from: FromAmount, to: ToAmount };
+  return {
+    from: FromAmount,
+    to: ToAmount,
+    indulgenceCount,
+    indulgenceDiscount,
+    discountedAmount,
+  };
 };
 
 router.post("/transfer", async (req, res) => {
