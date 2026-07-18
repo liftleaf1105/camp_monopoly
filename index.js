@@ -12,8 +12,12 @@ import socket from "./backend/src/socket.js";
 
 dotenv.config();
 
-const { PORT, MONGO_URL } = process.env;
+const { PORT, MONGO_URL, WEB_DOMAIN } = process.env;
 const port = PORT || 2022;
+const socketOrigins = [
+  `http://localhost:${port}`,
+  ...(WEB_DOMAIN ? [`https://${WEB_DOMAIN}`, `http://${WEB_DOMAIN}`] : []),
+];
 
 db.once("open", () => {
   console.log(`MongoDB connected at ${MONGO_URL}`);
@@ -22,7 +26,7 @@ db.once("open", () => {
   const server = http.createServer(app);
   const io = new Server(server, {
     cors: {
-      origin: `http://localhost:${port}`,
+      origin: WEB_DOMAIN ? socketOrigins : true,
       methods: ["GET", "POST"],
     },
   });

@@ -4,6 +4,10 @@ COPY frontend/package.json frontend/yarn.lock ./
 RUN yarn install --frozen-lockfile
 COPY frontend/public ./public
 COPY frontend/src ./src
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=${REACT_APP_API_URL:-}
+ARG REACT_APP_WS_URL
+ENV REACT_APP_WS_URL=${REACT_APP_WS_URL:-}
 RUN yarn build
 
 FROM node:20-alpine
@@ -23,6 +27,8 @@ ARG MONGO_URL
 ENV MONGO_URL=${MONGO_URL:-}
 ARG REACT_APP_API_URL
 ENV REACT_APP_API_URL=${REACT_APP_API_URL:-}
+ARG REACT_APP_WS_URL
+ENV REACT_APP_WS_URL=${REACT_APP_WS_URL:-}
 
 EXPOSE 2022
 CMD [ "node", "index.js" ]
