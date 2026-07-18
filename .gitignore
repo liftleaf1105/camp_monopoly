@@ -31,4 +31,4 @@ yarn-error.log*
 /backend/.env.defaults
 
 # picture
-/frontend/public/stage-art/
+/frontend/public/stage-art/*.jpg
