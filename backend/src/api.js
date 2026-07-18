@@ -238,13 +238,14 @@ const getPoorestTeamsByMoneyWithTies = async (count) => {
   return selected;
 };
 
-const getRichestTeamsByTotalAsset = async () => {
-  const teams = await Team.find().sort({ id: 1 });
+const getRichestTeamsByTotalAsset = async (excludedTeamIds = []) => {
+  const teams = await Team.find({ id: { $nin: excludedTeamIds } }).sort({ id: 1 });
   const resourcePrices = await Resource.find().sort({ id: 1 });
   const teamsWithAssets = teams.map((team) => ({
     team,
     totalAsset: calcTotalAsset(team, resourcePrices),
   }));
+  if (teamsWithAssets.length === 0) return [];
   const maxAsset = Math.max(
     ...teamsWithAssets.map(({ totalAsset }) => totalAsset)
   );
@@ -262,6 +263,44 @@ const calcBaseRent = async (land) => {
   }
   const count = await Land.countDocuments({ area: land.area, owner: land.owner });
   return count * 5000;
+};
+
+const getAyiBuildingPayment = async (land, ownerId) => {
+  if (!land) return { error: "Building not found" };
+
+  if (land.owner === 0) {
+    return {
+      amount: Number(land.price?.buy),
+      action: "Buy",
+      ownershipAction: {
+        teamId: ownerId,
+        buildingId: land.id,
+      },
+    };
+  }
+
+  if (land.owner === ownerId) {
+    if (land.type === "Building" && land.level >= 3) {
+      return { error: "Building is already at maximum level" };
+    }
+    return {
+      amount: Number(land.price?.upgrade),
+      action: "Upgrade",
+      ownershipAction: {
+        teamId: ownerId,
+        buildingId: land.id,
+      },
+    };
+  }
+
+  const landlordTeam = await Team.findAndCheckValid(land.owner);
+  if (!landlordTeam) return { error: "Building has no owner" };
+
+  return {
+    amount: await calcBaseRent(land),
+    action: "Rent",
+    landlord: landlordTeam,
+  };
 };
 
 const buildMoneyChange = (team, delta, role) => {
@@ -293,12 +332,11 @@ const buildMoneyChanges = (changes) => {
   );
 };
 
-const buildCardPreview = async ({ card, owner, target, amount, building }) => {
+const buildCardPreview = async ({ card, owner, target, building }) => {
   const cardName = cardNames[card];
   const ownerId = toId(owner);
   const targetId = toId(target);
   const buildingId = toId(building);
-  const requestedAmount = toId(amount);
   const ownerTeam = await Team.findAndCheckValid(ownerId);
 
   if (!cardName) return { error: "Unknown card" };
@@ -342,19 +380,55 @@ const buildCardPreview = async ({ card, owner, target, amount, building }) => {
   }
 
   if (card === "Ayi") {
-    const targetTeam = await Team.findAndCheckValid(targetId);
-    if (!targetTeam) return { error: "Target not found" };
-    if (ownerId === targetId) return { error: "Owner and Target cannot be the same" };
-    if (!requestedAmount || requestedAmount <= 0)
+    const land = await Land.findOne({ id: buildingId });
+    const payment = await getAyiBuildingPayment(land, ownerId);
+    if (payment.error) return { error: payment.error };
+    const cardAmount = Number(payment.amount);
+    if (!Number.isFinite(cardAmount) || cardAmount <= 0)
       return { error: "Amount must be greater than 0" };
+    const targetTeams = await getRichestTeamsByTotalAsset([ownerId]);
+    if (targetTeams.length === 0) return { error: "Target not found" };
+    const splitAmount = Math.ceil(cardAmount / targetTeams.length);
+    const targetTeamNames = targetTeams
+      .map((team) => formatTeamName(team.id))
+      .join("、");
     return {
       card,
       cardName,
       owner: ownerTeam,
-      target: targetTeam,
-      amount: requestedAmount,
+      targets: targetTeams,
+      building: land,
+      amount: cardAmount,
+      splitAmount,
+      action: payment.action,
+      ownershipAction: payment.ownershipAction,
+      cardNotices: [
+        ...targetTeams.map((team) => ({
+          type: "card",
+          targetTeamId: team.id,
+          message: `你失去${splitAmount}元`,
+        })),
+        ...(payment.landlord
+          ? [
+              {
+                type: "rent",
+                targetTeamId: payment.landlord.id,
+                title: "收到過路費",
+                description: `${targetTeamNames}支付了 ${cardAmount} 元過路費`,
+                note: `地產：${land.name}\n由於第${ownerId}小隊發動阿姨我不想努力了卡，過路費由${targetTeamNames}代墊`,
+              },
+            ]
+          : []),
+      ],
       moneyChanges: buildMoneyChanges([
-        { team: targetTeam, delta: -requestedAmount, role: "target" },
+        ...targetTeams.map((team) => ({
+          team,
+          delta: -splitAmount,
+          role: "target",
+        })),
+        ...(payment.landlord
+          ? [{ team: payment.landlord, delta: cardAmount, role: "landlord" }]
+          : []),
       ]),
     };
   }
@@ -1086,8 +1160,16 @@ router.post("/card", async (req, res) => {
     return;
   }
 
-  const { card, cardName, owner, target, building, newLevel, moneyChanges } =
-    preview;
+  const {
+    card,
+    cardName,
+    owner,
+    target,
+    building,
+    newLevel,
+    moneyChanges,
+    cardNotices,
+  } = preview;
   const ownerId = owner.id;
 
   if (card === "Ala") {
@@ -1106,6 +1188,7 @@ router.post("/card", async (req, res) => {
       const change = moneyChanges[i];
       if (change.delta === 0) continue;
       await updateTeamMoneyDirectly(change.team.id, change.delta);
+      if (card === "Ayi" && cardNotices) continue;
       emitCardNotice(
         req.io,
         change.team.id,
@@ -1115,6 +1198,26 @@ router.post("/card", async (req, res) => {
           ? `你獲得${change.delta}元`
           : `你失去${Math.abs(change.delta)}元`
       );
+    }
+    if (card === "Ayi" && cardNotices) {
+      cardNotices.forEach((notice) => {
+        if (notice.type === "rent") {
+          req.io.emit("broadcast", {
+            targetTeamId: notice.targetTeamId,
+            title: notice.title,
+            description: notice.description,
+            note: notice.note,
+          });
+        } else {
+          emitCardNotice(
+            req.io,
+            notice.targetTeamId,
+            ownerId,
+            cardName,
+            notice.message
+          );
+        }
+      });
     }
   }
 

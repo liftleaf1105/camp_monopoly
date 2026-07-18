@@ -54,9 +54,9 @@ const Card = () => {
   const navigate = useNavigate();
 
   const selectedCard = cards.find((item) => item.value === card);
-  const needsTarget = card === "Hey" || card === "Ayi";
-  const needsAmount = card === "Ayi";
-  const needsBuilding = card === "GeGon" || card === "Ala";
+  const needsTarget = card === "Hey";
+  const needsAmount = false;
+  const needsBuilding = card === "Ayi" || card === "GeGon" || card === "Ala";
 
   const buildingOptions = useMemo(() => {
     return lands.filter((land) => {
@@ -66,6 +66,7 @@ const Card = () => {
       ) {
         return false;
       }
+      if (card === "Ayi") return true;
       if (land.owner === 0) return false;
       if (owner !== -1 && land.owner === owner) return false;
       if (card === "Ala") return land.level > 1;
@@ -101,7 +102,7 @@ const Card = () => {
   };
 
   const handleSubmit = async () => {
-    await axios.post("/card", {
+    const { data } = await axios.post("/card", {
       card,
       owner,
       target,
@@ -111,6 +112,11 @@ const Card = () => {
     if (card === "Ala") {
       navigate("/properties?id=" + building);
       setNavBarId(3);
+    } else if (card === "Ayi" && data.ownershipAction) {
+      navigate(
+        `/setownership?team=${data.ownershipAction.teamId}&id=${data.ownershipAction.buildingId}`
+      );
+      setNavBarId(6);
     } else {
       navigate("/teams");
       setNavBarId(2);
@@ -135,9 +141,9 @@ const Card = () => {
   useEffect(() => {
     setPreview(null);
     setErrorMessage("");
-    if (card !== "Ayi") setAmount("");
-    if (card !== "Hey" && card !== "Ayi") setTarget(-1);
-    if (card !== "GeGon" && card !== "Ala") setBuilding(-1);
+    setAmount("");
+    if (card !== "Hey") setTarget(-1);
+    if (card !== "Ayi" && card !== "GeGon" && card !== "Ala") setBuilding(-1);
   }, [card]);
 
   useEffect(() => {
@@ -243,6 +249,9 @@ const Card = () => {
         <Typography variant="body2" sx={{ marginBottom: 1, textAlign: "center" }}>
           {preview.cardName} / {teamLabel(preview.owner.id)}
           {preview.target ? ` / ${teamLabel(preview.target.id)}` : ""}
+          {preview.targets
+            ? ` / ${preview.targets.map((team) => teamLabel(team.id)).join(", ")}`
+            : ""}
           {preview.building ? ` / ${preview.building.name}` : ""}
         </Typography>
         {propertyChange ? renderPropertyPreview() : renderMoneyPreview()}
