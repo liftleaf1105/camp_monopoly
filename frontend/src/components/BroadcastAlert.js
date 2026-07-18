@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import {
   Snackbar,
   Alert,
@@ -12,16 +12,28 @@ import CloseIcon from "@mui/icons-material/Close";
 import { socket } from "../websocket";
 import RoleContext from "./useRole";
 
+const isFullscreenMessage = (msg) => Boolean(msg?.fullscreen);
+
 const BroadcastAlert = () => {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState({});
   const [queue, setQueue] = useState([]);
+  const openRef = useRef(open);
+  const messageRef = useRef(message);
   const { role, roleId, setPhase, setUnreadCount } = useContext(RoleContext);
 
   const handleClose = (event, reason) => {
     if (reason === "clickaway") return;
     setOpen(false);
   };
+
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
+  useEffect(() => {
+    messageRef.current = message;
+  }, [message]);
 
   useEffect(() => {
     if (!open && queue.length > 0) {
@@ -39,10 +51,24 @@ const BroadcastAlert = () => {
     const broadcastLevel = currentTeamId || viewerLevel;
 
     const enqueue = (msg) => {
-      setQueue((messages) => [...messages, msg]);
-      if (msg.fullscreen) {
+      if (isFullscreenMessage(msg)) {
+        const activeMessage = messageRef.current;
+
+        if (openRef.current && isFullscreenMessage(activeMessage)) {
+          setQueue((messages) => [msg, ...messages]);
+        } else {
+          if (openRef.current) {
+            setQueue((messages) => [activeMessage, ...messages]);
+          }
+          setMessage(msg);
+          setOpen(true);
+        }
+
         setUnreadCount((count) => count + 1);
+        return;
       }
+
+      setQueue((messages) => [...messages, msg]);
     };
 
     const handleBroadcast = (args) => {
@@ -103,6 +129,7 @@ const BroadcastAlert = () => {
         fullScreen
         open={open}
         onClose={handleClose}
+        sx={(theme) => ({ zIndex: theme.zIndex.snackbar + 10 })}
         PaperProps={{
           sx: {
             backgroundColor: "rgba(0, 0, 0, 0.88)",

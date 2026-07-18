@@ -34,11 +34,6 @@ yarn initdata
 yarn server
 ```
 
-### Stage Art Images
-Download the stage art images from this Google Drive folder and place them in `frontend/public/stage-art`:
-
-https://drive.google.com/drive/folders/1qkG8-oMvCpIMhLHkbAFBg2WQYRBl58bL?usp=sharing
-
 ## Deployment
 ### Local
 ```bash
