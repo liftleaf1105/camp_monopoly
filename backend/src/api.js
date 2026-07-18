@@ -1,5 +1,4 @@
 import express from "express";
-import { randomUUID } from "node:crypto";
 import Team from "../models/team.js";
 import Land from "../models/land.js";
 import User from "../models/user.js";
@@ -10,17 +9,6 @@ import Effect from "../models/effect.js";
 import Broadcast from "../models/broadcast.js";
 import Resource from "../models/resource.js";
 const router = express.Router();
-const adminTokens = new Map();
-
-const requireAdmin = (req, res, next) => {
-  const token = req.get("X-Admin-Token");
-  if (adminTokens.get(token) !== "admin") {
-    res.status(401).json({ message: "Admin login is required" });
-    return;
-  }
-  next();
-};
-
 const getGameBonus = async () =>
   Pair.findOneAndUpdate(
     { key: "gameBonus" },
@@ -100,7 +88,7 @@ router
     const gameBonus = await getGameBonus();
     res.status(200).json({ value: gameBonus.value });
   })
-  .put(requireAdmin, async (req, res) => {
+  .put(async (req, res) => {
     const value = Number(req.body.value);
     if (!Number.isFinite(value) || value < 0.1 || value > 10) {
       res.status(400).json({ message: "Game bonus must be between 0.1 and 10" });
@@ -1743,13 +1731,7 @@ router.post("/login", async (req, res) => {
     console.log("login failed");
     return;
   }
-  const response = { username: user.username };
-  if (user.username === "admin") {
-    const token = randomUUID();
-    adminTokens.set(token, "admin");
-    response.adminToken = token;
-  }
-  res.status(200).send(response);
+  res.status(200).send({ username: user.username });
   // null, npc, admin: String
 });
 

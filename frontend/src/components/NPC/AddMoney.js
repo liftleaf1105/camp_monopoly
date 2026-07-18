@@ -350,9 +350,16 @@ const AddMoney = () => {
             <SimpleMoneyButton val={-5000} />
           </Box>
           <Button
-            variant={gameBonus ? "contained" : "outlined"}
+            variant="contained"
             disabled={Number(amount) <= 0}
-            sx={{ marginBottom: 1 }}
+            sx={{
+              marginBottom: 1,
+              backgroundColor: gameBonus ? "#ffffff" : "#5A4638",
+              color: gameBonus ? "#5A4638" : "#ffffff",
+              "&:hover": {
+                backgroundColor: gameBonus ? "#f3f3f3" : "#46362c",
+              },
+            }}
             onClick={() => setGameBonus(!gameBonus)}
           >
             Game Bonus = {gameBonusValue}
