@@ -16,8 +16,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
-        REACT_APP_WS_URL: ${REACT_APP_WS_URL:-}
+        REACT_APP_API_URL: https://eecamp-monopoly-2025.ntuee.org/api
     expose:
       - "2022"
     ports:
@@ -26,7 +25,7 @@ services:
       - monopoly-mongodb
     environment:
       MONGO_URL: mongodb://monopoly-mongodb/monopoly
-      WEB_DOMAIN: ${WEB_DOMAIN:-eecamp-monopoly-2025.ntuee.org}
+      WEB_DOMAIN: eecamp-monopoly-2025.ntuee.org
     tty: true
     stdin_open: true
     networks:
