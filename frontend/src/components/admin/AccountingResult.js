@@ -38,7 +38,7 @@ const AccountingResult = () => {
       <Box
         sx={{
           marginTop: 10,
-          marginBottom: 8,
+          marginBottom: "calc(88px + env(safe-area-inset-bottom))",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -67,8 +67,20 @@ const AccountingResult = () => {
           </>
         ) : (
           <>
-            <TableContainer component={Paper} sx={{ marginTop: 3 }}>
-              <Table aria-label="final-accounting-result" size="small">
+            <TableContainer
+              component={Paper}
+              sx={{
+                marginTop: 3,
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch",
+                width: "100%",
+              }}
+            >
+              <Table
+                aria-label="final-accounting-result"
+                size="small"
+                sx={{ minWidth: 620 }}
+              >
                 <TableHead>
                   <TableRow>
                     <TableCell align="center">Team</TableCell>
@@ -99,8 +111,20 @@ const AccountingResult = () => {
             <Typography component="h2" variant="h6" sx={{ marginTop: 4 }}>
               房地產數量
             </Typography>
-            <TableContainer component={Paper} sx={{ marginTop: 1 }}>
-              <Table aria-label="property-level-counts" size="small">
+            <TableContainer
+              component={Paper}
+              sx={{
+                marginTop: 1,
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch",
+                width: "100%",
+              }}
+            >
+              <Table
+                aria-label="property-level-counts"
+                size="small"
+                sx={{ minWidth: 520 }}
+              >
                 <TableHead>
                   <TableRow>
                     <TableCell align="center">Team</TableCell>

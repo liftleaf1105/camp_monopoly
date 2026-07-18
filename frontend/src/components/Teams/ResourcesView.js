@@ -117,9 +117,9 @@ const ResourcesView = () => {
           <Paper
             elevation={0}
             sx={{
-              overflow: "hidden",
+              overflowX: "auto",
               paddingTop: "60px",
-              paddingBottom: "60px",
+              paddingBottom: "calc(76px + env(safe-area-inset-bottom))",
               marginLeft: "2vw",
               marginRight: "2vw",
             }}
@@ -127,9 +127,11 @@ const ResourcesView = () => {
             <TableContainer
               sx={{
                 maxHeight: 900,
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch",
               }}
             >
-                <Table stickyHeader aria-label="sticky table">
+                <Table stickyHeader aria-label="sticky table" sx={{ minWidth: 360 }}>
                   <TableHead>
                     <TableRow>
                       {columns.map((item) => (

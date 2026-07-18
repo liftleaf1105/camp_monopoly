@@ -46,8 +46,10 @@ const LoveConversionTable = () => (
     >
       贖罪券
     </Typography>
-    <TableContainer>
-      <Table size="small" aria-label="love conversion table">
+    <TableContainer
+      sx={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}
+    >
+      <Table size="small" aria-label="love conversion table" sx={{ minWidth: 560 }}>
         <TableHead>
           <TableRow>
             {Array.from({ length: LOVE_COLUMN_GROUPS }).map(

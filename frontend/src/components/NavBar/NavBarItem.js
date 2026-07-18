@@ -28,7 +28,7 @@ export const NavBarItems = [
     id: 1,
     icon: <NotificationsIcon />,
     label: "Notifications",
-    shortLabel: "Notifications",
+    shortLabel: "Notifs",
     route: "notifications",
   },
   {
@@ -56,7 +56,7 @@ export const NavBarItems = [
     id: 11,
     icon: <AutoGraphIcon />, //resource
     label: "ResourcesView",
-    shortLabel: "ResourcesView",
+    shortLabel: "ResView",
     route: "resourcesview",
   }
 ];
@@ -73,7 +73,7 @@ export const NPCItems = [
     id: 6,
     icon: <RequestQuoteIcon />,
     label: "Set Ownership",
-    shortLabel: "Ownership",
+    shortLabel: "Own",
     route: "setownership",
   },
   {
@@ -153,7 +153,7 @@ export const adminItems = [
     id: 16,
     icon: <CalculateIcon />,
     label: "SetResources",
-    shortLabel: "SetResources",
+    shortLabel: "SetRes",
     route: "setresources",
   },
   {

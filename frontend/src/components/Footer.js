@@ -44,19 +44,47 @@ const Footer = () => {
   const mapping = (item) => (
     <BottomNavigationAction
       key={item.id}
-      label={item.shortLabel}
+      label={item.label}
       icon={withBadge(item)}
+      sx={{
+        flex: "1 0 auto",
+        minWidth: "max-content",
+        maxWidth: "none",
+        px: { xs: 1, sm: 1.5 },
+        "& .MuiBottomNavigationAction-label": {
+          whiteSpace: "nowrap",
+          maxWidth: "100%",
+          fontSize: "0.68rem",
+        },
+      }}
     />
   );
 
   return (
     <AppBar
       position="fixed"
-      sx={{ top: "auto", bottom: 0 }}
+      sx={{
+        top: "auto",
+        bottom: 0,
+        overflowX: "auto",
+        overflowY: "hidden",
+        WebkitOverflowScrolling: "touch",
+        pb: "env(safe-area-inset-bottom)",
+        scrollbarWidth: "none",
+        "&::-webkit-scrollbar": {
+          display: "none",
+        },
+      }}
     >
       <BottomNavigation
         showLabels
         value={value}
+        sx={{
+          width: "100%",
+          minWidth: "max-content",
+          flexWrap: "nowrap",
+          justifyContent: "flex-start",
+        }}
         onChange={(event, newValue) => {
           if (newValue < items.length) navigate(items[newValue].route);
         }}
