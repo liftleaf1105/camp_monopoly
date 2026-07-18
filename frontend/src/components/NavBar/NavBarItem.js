@@ -154,6 +154,13 @@ export const adminItems = [
     label: "SetResources",
     shortLabel: "SetResources",
     route: "setresources",
+  },
+  {
+    id: 20,
+    icon: <FunctionsIcon />,
+    label: "Game Bonus",
+    shortLabel: "Bonus",
+    route: "addmoney",
   }
 ];
 

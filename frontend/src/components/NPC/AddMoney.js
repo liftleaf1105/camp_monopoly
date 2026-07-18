@@ -34,6 +34,10 @@ const AddMoney = () => {
 
   const [amount, setAmount] = useState("0");
   const [errorMessage, setErrorMessage] = useState("");
+  const [gameBonus, setGameBonus] = useState(false);
+  const [gameBonusValue, setGameBonusValue] = useState(1);
+  const [gameBonusInput, setGameBonusInput] = useState("1");
+  const [gameBonusError, setGameBonusError] = useState("");
 
   const [building, setBuilding] = useState(-1);
   const [price, setPrice] = useState({});
@@ -66,6 +70,31 @@ const AddMoney = () => {
       setShowPreview(false);
     }
     setAmount(amount);
+  };
+
+  const loadGameBonus = async () => {
+    try {
+      const { data } = await axios.get("/gameBonus");
+      setGameBonusValue(data.value);
+      setGameBonusInput(String(data.value));
+    } catch (error) {
+      setGameBonusError("Unable to load the game bonus");
+    }
+  };
+
+  const saveGameBonus = async () => {
+    try {
+      const { data } = await axios.put("/gameBonus", {
+        value: Number(gameBonusInput),
+      });
+      setGameBonusValue(data.value);
+      setGameBonusInput(String(data.value));
+      setGameBonusError("");
+    } catch (error) {
+      setGameBonusError(
+        error.response?.data?.message || "Unable to update the game bonus"
+      );
+    }
   };
 
   const handleBuilding = async (building) => {
@@ -130,7 +159,7 @@ const AddMoney = () => {
 
   const handlePreview = async () => {
     const { data } = await axios.get("/add", {
-      params: { id: team, dollar: amount },
+      params: { id: team, dollar: amount, gameBonus },
     });
     setNewData(data.money);
   };
@@ -140,6 +169,7 @@ const AddMoney = () => {
       id: team,
       teamname: `第${team}小隊`,
       dollar: parseInt(amount) ? parseInt(amount) : 0,
+      gameBonus,
     };
     await axios.post("/add", payload);
     navigate("/teams");
@@ -165,6 +195,7 @@ const AddMoney = () => {
   const selectPropertyPurchase = (mode, cost) => {
     setPurchaseMode(mode);
     setPurchaseError("");
+    setGameBonus(false);
     handleAmount(String(-cost));
   };
 
@@ -195,6 +226,7 @@ const AddMoney = () => {
       navigate("/permission");
       setNavBarId(0);
     }
+    loadGameBonus();
     // axios
     //   .get("/team")
     //   .then((res) => {
@@ -210,7 +242,7 @@ const AddMoney = () => {
     if (team !== -1 && amount !== 0) {
       handlePreview();
     }
-  }, [team, amount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [team, amount, gameBonus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasBuildingOwner = Number(buildingOwner) > 0;
   const selectedTeamOwnsBuilding =
@@ -317,6 +349,20 @@ const AddMoney = () => {
             <SimpleMoneyButton val={-1000} />
             <SimpleMoneyButton val={-5000} />
           </Box>
+          <Button
+            variant={gameBonus ? "contained" : "outlined"}
+            disabled={Number(amount) <= 0}
+            sx={{ marginBottom: 1 }}
+            onClick={() => setGameBonus(!gameBonus)}
+          >
+            Game Bonus = {gameBonusValue}
+          </Button>
+          {gameBonus ? (
+            <FormHelperText>
+              Game reward: {amount || 0} x {gameBonusValue} = {" "}
+              {Math.round(Number(amount || 0) * gameBonusValue)}
+            </FormHelperText>
+          ) : null}
           <Box
             sx={{
               display: "flex",
@@ -419,6 +465,28 @@ const AddMoney = () => {
             </Grid>
           </Grid>
         </FormControl>
+        {roleId === 100 ? (
+          <Box sx={{ marginTop: 4, width: 250 }}>
+            <Typography component="h2" variant="h6">
+              Game Bonus Settings
+            </Typography>
+            <TextField
+              fullWidth
+              label="Game Bonus"
+              type="number"
+              inputProps={{ min: 0.1, max: 10, step: 0.1 }}
+              sx={{ marginTop: 1, marginBottom: 1 }}
+              value={gameBonusInput}
+              onChange={(e) => setGameBonusInput(e.target.value)}
+            />
+            <Button variant="contained" onClick={saveGameBonus} fullWidth>
+              Save Game Bonus
+            </Button>
+            {gameBonusError ? (
+              <FormHelperText error>{gameBonusError}</FormHelperText>
+            ) : null}
+          </Box>
+        ) : null}
         <Box
           sx={{
             marginTop: 1,

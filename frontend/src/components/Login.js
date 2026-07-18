@@ -50,9 +50,8 @@ const Login = () => {
     if (!(user && password)) return;
     // post /api/login
     const payload = { username: user, password: password };
-    const {
-      data: { username },
-    } = await axios.post("/login", payload);
+    const { data } = await axios.post("/login", payload);
+    const { username, adminToken } = data;
     // console.log(username);
     if (username !== "") {
       // success!
@@ -63,11 +62,14 @@ const Login = () => {
       setRoleId(id);
       // console.log(roleIdMap[username]);
       localStorage.setItem("role", username);
+      if (adminToken) localStorage.setItem("adminToken", adminToken);
+      else localStorage.removeItem("adminToken");
       navigate("/");
     } else {
       //failed
       setRole("");
       setRoleId(0);
+      localStorage.removeItem("adminToken");
       setMessage("Wrong Username or Password.");
       setOpen(true);
     }

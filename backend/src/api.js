@@ -1,4 +1,5 @@
 import express from "express";
+import { randomUUID } from "node:crypto";
 import Team from "../models/team.js";
 import Land from "../models/land.js";
 import User from "../models/user.js";
@@ -9,6 +10,33 @@ import Effect from "../models/effect.js";
 import Broadcast from "../models/broadcast.js";
 import Resource from "../models/resource.js";
 const router = express.Router();
+const adminTokens = new Map();
+
+const requireAdmin = (req, res, next) => {
+  const token = req.get("X-Admin-Token");
+  if (adminTokens.get(token) !== "admin") {
+    res.status(401).json({ message: "Admin login is required" });
+    return;
+  }
+  next();
+};
+
+const getGameBonus = async () =>
+  Pair.findOneAndUpdate(
+    { key: "gameBonus" },
+    { $setOnInsert: { value: 1 } },
+    { new: true, upsert: true }
+  );
+
+const applyGameBonus = async (dollar, gameBonusEnabled) => {
+  const amount = Number(dollar);
+  const shouldApply = gameBonusEnabled === true || gameBonusEnabled === "true";
+
+  if (!shouldApply || !Number.isFinite(amount) || amount <= 0) return amount;
+
+  const gameBonus = await getGameBonus();
+  return Math.round(amount * gameBonus.value);
+};
 
 const SERIES_BONUS_GROUPS = [
   [2, 3, 4],
@@ -65,6 +93,27 @@ const recalculateSeriesBonus = async (groupIds) => {
 router.get("/", (req, res) => {
   res.json({ a: 1, b: 2 });
 });
+
+router
+  .route("/gameBonus")
+  .get(async (req, res) => {
+    const gameBonus = await getGameBonus();
+    res.status(200).json({ value: gameBonus.value });
+  })
+  .put(requireAdmin, async (req, res) => {
+    const value = Number(req.body.value);
+    if (!Number.isFinite(value) || value < 0.1 || value > 10) {
+      res.status(400).json({ message: "Game bonus must be between 0.1 and 10" });
+      return;
+    }
+
+    const gameBonus = await Pair.findOneAndUpdate(
+      { key: "gameBonus" },
+      { value },
+      { new: true, upsert: true }
+    );
+    res.status(200).json({ value: gameBonus.value });
+  });
 
 // const requireAdmin = (req, res, next) => {
 //   if (!req.session.user) {
@@ -991,7 +1040,7 @@ router.post("/goldenFruit", async (req, res) => {
 
 router
   .post("/add", async (req, res) => {
-    const { id, dollar, jeff, jeffTeam } = req.body;
+    const { id, dollar, jeff, jeffTeam, gameBonus } = req.body;
     const team = await Team.findAndCheckValid(id);
     const targetTeam = await Team.find({ id: jeffTeam });
     if (!team) {
@@ -1011,7 +1060,8 @@ router
       );
     }
 
-    await updateTeam(id, dollar, req.io, true);
+    const adjustedDollar = await applyGameBonus(dollar, gameBonus);
+    await updateTeam(id, adjustedDollar, req.io, true);
     // if (dollar < 0) {
     //   req.io.emit("broadcast", {
     //     title: "扣錢",
@@ -1023,11 +1073,12 @@ router
   })
   .get("/add", async (req, res) => {
     console.log(req.query);
-    const { id, dollar } = req.query;
+    const { id, dollar, gameBonus } = req.query;
     console.log(id, dollar);
-    const data = await updateTeam(id, dollar, req.io, false);
+    const adjustedDollar = await applyGameBonus(dollar, gameBonus);
+    const data = await updateTeam(id, adjustedDollar, req.io, false);
     console.log(data);
-    res.json(data).status(200);
+    res.json({ ...data, adjustedDollar }).status(200);
   });
 
 router.post("/card/preview", async (req, res) => {
@@ -1692,7 +1743,13 @@ router.post("/login", async (req, res) => {
     console.log("login failed");
     return;
   }
-  res.status(200).send({ username: user.username });
+  const response = { username: user.username };
+  if (user.username === "admin") {
+    const token = randomUUID();
+    adminTokens.set(token, "admin");
+    response.adminToken = token;
+  }
+  res.status(200).send(response);
   // null, npc, admin: String
 });
 

@@ -48,6 +48,7 @@ const Header = () => {
     setRole("");
     setRoleId(0);
     localStorage.removeItem("role");
+    localStorage.removeItem("adminToken");
     navigate("/"); //set to home later
   };
 

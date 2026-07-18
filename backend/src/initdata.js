@@ -642,6 +642,10 @@ const pairs = [
     key: "phase",
     value: 1,
   },
+  {
+    key: "gameBonus",
+    value: 1,
+  },
 ];
 
 db.on("error", console.error.bind(console, "connection error:"));

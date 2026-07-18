@@ -5,4 +5,10 @@ const instance = _axios.create({
   timeout: 2000,
 });
 
+instance.interceptors.request.use((config) => {
+  const adminToken = localStorage.getItem("adminToken");
+  if (adminToken) config.headers["X-Admin-Token"] = adminToken;
+  return config;
+});
+
 export default instance;
