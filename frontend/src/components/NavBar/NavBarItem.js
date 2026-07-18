@@ -14,6 +14,7 @@ import CalculateIcon from '@mui/icons-material/Calculate';
 import CollectionsIcon from "@mui/icons-material/Collections";
 import StyleIcon from "@mui/icons-material/Style";
 import FunctionsIcon from "@mui/icons-material/Functions";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 
 export const NavBarItems = [
   {
@@ -154,6 +155,13 @@ export const adminItems = [
     label: "SetResources",
     shortLabel: "SetResources",
     route: "setresources",
+  },
+  {
+    id: 20,
+    icon: <TrendingUpIcon />,
+    label: "Game Bonus",
+    shortLabel: "Bonus",
+    route: "gamebonus",
   }
 ];
 

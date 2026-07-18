@@ -10,6 +10,23 @@ import Broadcast from "../models/broadcast.js";
 import Resource from "../models/resource.js";
 const router = express.Router();
 
+const getGameBonus = async () =>
+  Pair.findOneAndUpdate(
+    { key: "gameBonus" },
+    { $setOnInsert: { value: 1 } },
+    { new: true, upsert: true }
+  );
+
+const applyGameBonus = async (dollar, gameBonusEnabled) => {
+  const amount = Number(dollar);
+  const shouldApply = gameBonusEnabled === true || gameBonusEnabled === "true";
+
+  if (!shouldApply || !Number.isFinite(amount) || amount <= 0) return amount;
+
+  const gameBonus = await getGameBonus();
+  return Math.round(amount * gameBonus.value);
+};
+
 const SERIES_BONUS_GROUPS = [
   [2, 3, 4],
   [6, 7, 8],
@@ -65,6 +82,27 @@ const recalculateSeriesBonus = async (groupIds) => {
 router.get("/", (req, res) => {
   res.json({ a: 1, b: 2 });
 });
+
+router
+  .route("/gameBonus")
+  .get(async (req, res) => {
+    const gameBonus = await getGameBonus();
+    res.status(200).json({ value: gameBonus.value });
+  })
+  .put(async (req, res) => {
+    const value = Number(req.body.value);
+    if (!Number.isFinite(value) || value < 0.1 || value > 10) {
+      res.status(400).json({ message: "Game bonus must be between 0.1 and 10" });
+      return;
+    }
+
+    const gameBonus = await Pair.findOneAndUpdate(
+      { key: "gameBonus" },
+      { value },
+      { new: true, upsert: true }
+    );
+    res.status(200).json({ value: gameBonus.value });
+  });
 
 // const requireAdmin = (req, res, next) => {
 //   if (!req.session.user) {
@@ -991,7 +1029,7 @@ router.post("/goldenFruit", async (req, res) => {
 
 router
   .post("/add", async (req, res) => {
-    const { id, dollar, jeff, jeffTeam } = req.body;
+    const { id, dollar, jeff, jeffTeam, gameBonus } = req.body;
     const team = await Team.findAndCheckValid(id);
     const targetTeam = await Team.find({ id: jeffTeam });
     if (!team) {
@@ -1011,7 +1049,8 @@ router
       );
     }
 
-    await updateTeam(id, dollar, req.io, true);
+    const adjustedDollar = await applyGameBonus(dollar, gameBonus);
+    await updateTeam(id, adjustedDollar, req.io, true);
     // if (dollar < 0) {
     //   req.io.emit("broadcast", {
     //     title: "扣錢",
@@ -1023,11 +1062,12 @@ router
   })
   .get("/add", async (req, res) => {
     console.log(req.query);
-    const { id, dollar } = req.query;
+    const { id, dollar, gameBonus } = req.query;
     console.log(id, dollar);
-    const data = await updateTeam(id, dollar, req.io, false);
+    const adjustedDollar = await applyGameBonus(dollar, gameBonus);
+    const data = await updateTeam(id, adjustedDollar, req.io, false);
     console.log(data);
-    res.json(data).status(200);
+    res.json({ ...data, adjustedDollar }).status(200);
   });
 
 router.post("/card/preview", async (req, res) => {
@@ -1125,47 +1165,75 @@ router.post("/soldout", async (req, res) => {
   res.json("Success").status(200);
 });
 
-router.post("/accounting", async (req, res) => {
-  const teams = await Team.find().sort({ id: 1 });
-  const resourcePrices = await Resource.find().sort({ id: 1 });
-  const lovePrice =
-    resourcePrices.find((resource) => resource.id === 0)?.price || 0;
-  const eecoinPrice =
-    resourcePrices.find((resource) => resource.id === 1)?.price || 0;
-  const results = [];
-
-  for (let i = 0; i < teams.length; i++) {
-    const lands = await Land.find({ owner: teams[i].id });
-    let propertyValue = 0;
-    for (let i = 0; i < lands.length; i++) {
-      propertyValue +=
-        (lands[i].price.buy + lands[i].price.upgrade * (lands[i].level - 1)) *
-        0.5;
-    }
-    propertyValue = Math.round(propertyValue);
-    const cash = Math.round(teams[i].money);
-    const resourceValue =
-      (teams[i].resources?.love || 0) * lovePrice +
-      (teams[i].resources?.eecoin || 0) * eecoinPrice;
-
-    results.push({
-      teamId: teams[i].id,
-      teamname: teams[i].teamname,
-      cash,
-      resourceValue,
-      propertyValue,
-      total: cash + resourceValue + propertyValue,
-    });
-
-    teams[i].money += propertyValue;
-    await teams[i].save();
-    await Land.updateMany(
-      { owner: teams[i].id },
-      { $set: { owner: 0, level: 0 } }
+router
+  .get("/accounting", async (req, res) => {
+    const pair = await Pair.findOneAndUpdate(
+      { key: "finalAccountingCount" },
+      { $setOnInsert: { value: 0 } },
+      { new: true, upsert: true }
     );
-  }
-  res.status(200).json({ message: "Success", results });
-});
+    res.status(200).json({ count: pair.value });
+  })
+  .post("/accounting", async (req, res) => {
+    const accountingCount = await Pair.findOneAndUpdate(
+      { key: "finalAccountingCount" },
+      { $setOnInsert: { value: 0 } },
+      { new: true, upsert: true }
+    );
+
+    const teams = await Team.find().sort({ id: 1 });
+    const resourcePrices = await Resource.find().sort({ id: 1 });
+    const lovePrice =
+      resourcePrices.find((resource) => resource.id === 0)?.price || 0;
+    const eecoinPrice =
+      resourcePrices.find((resource) => resource.id === 1)?.price || 0;
+    const results = [];
+
+    for (let i = 0; i < teams.length; i++) {
+      const lands = await Land.find({ owner: teams[i].id });
+      let propertyValue = 0;
+      const propertyCounts = {
+        level1: 0,
+        level2: 0,
+        level3: 0,
+      };
+
+      for (let i = 0; i < lands.length; i++) {
+        if (lands[i].type === "Building") {
+          if (lands[i].level === 1) propertyCounts.level1 += 1;
+          if (lands[i].level === 2) propertyCounts.level2 += 1;
+          if (lands[i].level === 3) propertyCounts.level3 += 1;
+        }
+
+        propertyValue +=
+          (lands[i].price.buy + lands[i].price.upgrade * (lands[i].level - 1)) *
+          0.5;
+      }
+      propertyValue = Math.round(propertyValue);
+      const cash = Math.round(teams[i].money);
+      const resourceValue =
+        (teams[i].resources?.love || 0) * lovePrice +
+        (teams[i].resources?.eecoin || 0) * eecoinPrice;
+
+      results.push({
+        teamId: teams[i].id,
+        teamname: teams[i].teamname,
+        cash,
+        resourceValue,
+        propertyValue,
+        total: cash + resourceValue + propertyValue,
+        propertyCounts,
+      });
+
+      teams[i].money += propertyValue;
+      await teams[i].save();
+    }
+    accountingCount.value += 1;
+    await accountingCount.save();
+    res
+      .status(200)
+      .json({ message: "Success", count: accountingCount.value, results });
+  });
 
 router.post("/rob", async (req, res) => {
   const { id } = req.body;

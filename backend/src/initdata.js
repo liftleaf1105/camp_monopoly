@@ -11,7 +11,6 @@ import Pair from "../models/pair.js";
 import Effect from "../models/effect.js";
 
 dotenv.config();
-console.log(process.env.MONGO_URL);
 
 const db = mongoose.connection;
 mongoose.connect(process.env.MONGO_URL, {
@@ -643,6 +642,14 @@ const pairs = [
     key: "phase",
     value: 1,
   },
+  {
+    key: "gameBonus",
+    value: 1,
+  },
+  {
+    key: "finalAccountingCount",
+    value: 0,
+  },
 ];
 
 db.on("error", console.error.bind(console, "connection error:"));
@@ -686,4 +693,5 @@ db.once("open", async () => {
   // console.log("effects created");
 
   console.log("finish saving data");
+  await mongoose.disconnect();
 });

@@ -39,6 +39,7 @@ import Help from "./components/Help";
 import ResourcesView from "./components/Teams/ResourcesView";
 import StageDisplay from "./components/StageDisplay";
 import AccountingResult from "./components/admin/AccountingResult";
+import GameBonus from "./components/admin/GameBonus";
 // import SetPrices from "./components/admin/Resources";
 // import Resource from "../../backend/models/resource";
 // // import { socket, SocketContext } from "./websocket";
@@ -143,6 +144,7 @@ const App = () => {
               <Route path="setdice" element={<SetDice />} />
               <Route path="map" element={<Map />} />
               <Route path="setresources" element={<SetResources />} />
+              <Route path="gamebonus" element={<GameBonus />} />
             </Routes>
           </CSSTransition>
         </TransitionGroup>

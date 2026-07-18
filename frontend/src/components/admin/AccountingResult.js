@@ -16,12 +16,15 @@ import {
 import RoleContext from "../useRole";
 
 const formatMoney = (value) => Math.round(value || 0).toLocaleString();
+const propertyCount = (item, level) =>
+  item.propertyCounts?.[`level${level}`] || 0;
 
 const AccountingResult = () => {
   const { role } = useContext(RoleContext);
   const location = useLocation();
   const navigate = useNavigate();
   const results = location.state?.results || [];
+  const count = location.state?.count;
 
   React.useEffect(() => {
     if (role !== "admin") {
@@ -44,6 +47,11 @@ const AccountingResult = () => {
         <Typography component="h1" variant="h5">
           Final Accounting Result
         </Typography>
+        {count ? (
+          <Typography sx={{ marginTop: 1, color: "gray" }}>
+            Final accounting run #{count}
+          </Typography>
+        ) : null}
         {results.length === 0 ? (
           <>
             <Typography sx={{ marginTop: 2, color: "gray" }}>
@@ -58,34 +66,62 @@ const AccountingResult = () => {
             </Button>
           </>
         ) : (
-          <TableContainer component={Paper} sx={{ marginTop: 3 }}>
-            <Table aria-label="final-accounting-result" size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell align="center">Team</TableCell>
-                  <TableCell align="center">現金</TableCell>
-                  <TableCell align="center">物資價值</TableCell>
-                  <TableCell align="center">房地產價值</TableCell>
-                  <TableCell align="center">總和</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {results.map((item) => (
-                  <TableRow key={item.teamId}>
-                    <TableCell align="center">{item.teamname}</TableCell>
-                    <TableCell align="center">{formatMoney(item.cash)}</TableCell>
-                    <TableCell align="center">
-                      {formatMoney(item.resourceValue)}
-                    </TableCell>
-                    <TableCell align="center">
-                      {formatMoney(item.propertyValue)}
-                    </TableCell>
-                    <TableCell align="center">{formatMoney(item.total)}</TableCell>
+          <>
+            <TableContainer component={Paper} sx={{ marginTop: 3 }}>
+              <Table aria-label="final-accounting-result" size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell align="center">Team</TableCell>
+                    <TableCell align="center">現金</TableCell>
+                    <TableCell align="center">物資價值</TableCell>
+                    <TableCell align="center">房地產價值</TableCell>
+                    <TableCell align="center">總和</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {results.map((item) => (
+                    <TableRow key={item.teamId}>
+                      <TableCell align="center">{item.teamname}</TableCell>
+                      <TableCell align="center">{formatMoney(item.cash)}</TableCell>
+                      <TableCell align="center">
+                        {formatMoney(item.resourceValue)}
+                      </TableCell>
+                      <TableCell align="center">
+                        {formatMoney(item.propertyValue)}
+                      </TableCell>
+                      <TableCell align="center">{formatMoney(item.total)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Typography component="h2" variant="h6" sx={{ marginTop: 4 }}>
+              房地產數量
+            </Typography>
+            <TableContainer component={Paper} sx={{ marginTop: 1 }}>
+              <Table aria-label="property-level-counts" size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell align="center">Team</TableCell>
+                    <TableCell align="center">一級房地產</TableCell>
+                    <TableCell align="center">二級房地產</TableCell>
+                    <TableCell align="center">三級房地產</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {results.map((item) => (
+                    <TableRow key={item.teamId}>
+                      <TableCell align="center">{item.teamname}</TableCell>
+                      <TableCell align="center">{propertyCount(item, 1)}</TableCell>
+                      <TableCell align="center">{propertyCount(item, 2)}</TableCell>
+                      <TableCell align="center">{propertyCount(item, 3)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
         )}
       </Box>
     </Container>

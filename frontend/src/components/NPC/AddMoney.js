@@ -34,6 +34,8 @@ const AddMoney = () => {
 
   const [amount, setAmount] = useState("0");
   const [errorMessage, setErrorMessage] = useState("");
+  const [gameBonus, setGameBonus] = useState(false);
+  const [gameBonusValue, setGameBonusValue] = useState(1);
 
   const [building, setBuilding] = useState(-1);
   const [price, setPrice] = useState({});
@@ -66,6 +68,23 @@ const AddMoney = () => {
       setShowPreview(false);
     }
     setAmount(amount);
+  };
+
+  const loadGameBonus = async () => {
+    try {
+      const { data } = await axios.get("/gameBonus");
+      setGameBonusValue(data.value);
+    } catch (error) {
+      console.error("Unable to load the game bonus", error);
+    }
+  };
+
+  const handleGameBonusToggle = async () => {
+    const nextGameBonus = !gameBonus;
+    if (nextGameBonus) {
+      await loadGameBonus();
+    }
+    setGameBonus(nextGameBonus);
   };
 
   const handleBuilding = async (building) => {
@@ -130,7 +149,7 @@ const AddMoney = () => {
 
   const handlePreview = async () => {
     const { data } = await axios.get("/add", {
-      params: { id: team, dollar: amount },
+      params: { id: team, dollar: amount, gameBonus },
     });
     setNewData(data.money);
   };
@@ -140,6 +159,7 @@ const AddMoney = () => {
       id: team,
       teamname: `第${team}小隊`,
       dollar: parseInt(amount) ? parseInt(amount) : 0,
+      gameBonus,
     };
     await axios.post("/add", payload);
     navigate("/teams");
@@ -165,6 +185,7 @@ const AddMoney = () => {
   const selectPropertyPurchase = (mode, cost) => {
     setPurchaseMode(mode);
     setPurchaseError("");
+    setGameBonus(false);
     handleAmount(String(-cost));
   };
 
@@ -195,6 +216,7 @@ const AddMoney = () => {
       navigate("/permission");
       setNavBarId(0);
     }
+    loadGameBonus();
     // axios
     //   .get("/team")
     //   .then((res) => {
@@ -210,7 +232,7 @@ const AddMoney = () => {
     if (team !== -1 && amount !== 0) {
       handlePreview();
     }
-  }, [team, amount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [team, amount, gameBonus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasBuildingOwner = Number(buildingOwner) > 0;
   const selectedTeamOwnsBuilding =
@@ -317,6 +339,27 @@ const AddMoney = () => {
             <SimpleMoneyButton val={-1000} />
             <SimpleMoneyButton val={-5000} />
           </Box>
+          <Button
+            variant="contained"
+            disabled={Number(amount) <= 0}
+            sx={{
+              marginBottom: 1,
+              backgroundColor: gameBonus ? "#ffffff" : "#5A4638",
+              color: gameBonus ? "#5A4638" : "#ffffff",
+              "&:hover": {
+                backgroundColor: gameBonus ? "#f3f3f3" : "#46362c",
+              },
+            }}
+            onClick={handleGameBonusToggle}
+          >
+            Game Bonus = {gameBonusValue}
+          </Button>
+          {gameBonus ? (
+            <FormHelperText>
+              Game reward: {amount || 0} x {gameBonusValue} = {" "}
+              {Math.round(Number(amount || 0) * gameBonusValue)}
+            </FormHelperText>
+          ) : null}
           <Box
             sx={{
               display: "flex",
