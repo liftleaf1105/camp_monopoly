@@ -29,3 +29,6 @@ yarn-error.log*
 
 # env
 /backend/.env.defaults
+
+# picture
+/frontend/public/stage-art/

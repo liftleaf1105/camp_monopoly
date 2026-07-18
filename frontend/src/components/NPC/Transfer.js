@@ -32,7 +32,7 @@ const INDULGENCE_DISCOUNTS = [
 ];
 
 const getIndulgenceDiscount = (count) => {
-  const cappedCount = Math.min(Math.max(count, 0), 15);
+  const cappedCount = Math.min(Math.max(Math.floor(count), 0), 15);
   return INDULGENCE_DISCOUNTS[cappedCount];
 };
 
@@ -54,8 +54,6 @@ const Transfer = () => {
   const [finalData, setFinalData] = useState({});
 
   const [amount, setAmount] = useState(0);
-  const [discountCount, setDiscountCount] = useState(0);
-  const [discountBaseAmount, setDiscountBaseAmount] = useState(null);
 
   const [errorMessage, setErrorMessage] = useState("");
   const [error, setError] = useState(false);
@@ -67,40 +65,17 @@ const Transfer = () => {
     buildingData.owner !== undefined &&
     Number(to) !== Number(buildingData.owner);
 
-  const resetDiscount = () => {
-    setDiscountCount(0);
-    setDiscountBaseAmount(null);
-  };
+  const indulgenceCount = Math.max(0, Number(fromData.resources?.love) || 0);
+  const indulgenceDiscount = getIndulgenceDiscount(indulgenceCount);
+  const discountedAmount = Number.isFinite(Number(amount)) && Number(amount) > 0
+    ? Math.round(Number(amount) * (1 - indulgenceDiscount))
+    : null;
 
   const handleFrom = async (from) => {
-    resetDiscount();
     const { data } = await axios.get("/team/" + from);
     // console.log(data);
     setFromData(data);
     setFrom(from);
-  };
-
-  const handleDiscount = () => {
-    const currentAmount = Number(amount);
-    if (!Number.isFinite(currentAmount) || currentAmount <= 0) {
-      setErrorMessage("Please enter a valid number");
-      setError(true);
-      return;
-    }
-
-    const baseAmount = discountBaseAmount ?? currentAmount;
-    const nextCount = discountCount + 1;
-    const displayCount = Math.min(nextCount, 15);
-    const displayCountLabel = nextCount > 15 ? "15+" : String(displayCount);
-    const discount = getIndulgenceDiscount(nextCount);
-
-    setDiscountBaseAmount(baseAmount);
-    setDiscountCount(nextCount);
-    setAmount(Math.round(baseAmount * (1 - discount)));
-    setErrorMessage(
-      `Discounted: ${displayCountLabel} indulgence${displayCount > 1 ? "s" : ""} (${formatDiscountPercent(discount)}% off)`
-    );
-    setError(false);
   };
 
   const handleTo = async (to) => {
@@ -147,7 +122,6 @@ const Transfer = () => {
   };
 
   const handleBuilding = async (building) => {
-    resetDiscount();
     if (building > 0) {
       const { data } = await axios.get("/land/" + building);
       setBuilding(building);
@@ -188,7 +162,6 @@ const Transfer = () => {
   };
 
   const handlePercentMoney = async (percent) => {
-    resetDiscount();
     // const money = fromData.money; //find the team's money
     const { data } = await axios.get("/getRent", {
       params: { building: building },
@@ -197,7 +170,6 @@ const Transfer = () => {
   };
 
   const handleEqualMoney = () => {
-    resetDiscount();
     let money_from = fromData.money; //first team (using the card)
     let money_to = toData.money; //second team(passive)
     let temp = Math.round((money_from - money_to) / 2);
@@ -433,7 +405,6 @@ const Transfer = () => {
             onChange={(e) => {
               const re = /^[0-9\b]+$/;
               if (e.target.value === "" || re.test(e.target.value)) {
-                resetDiscount();
                 setAmount(e.target.value ? e.target.value : "");
                 setErrorMessage("");
                 setError(false);
@@ -445,6 +416,21 @@ const Transfer = () => {
             helperText={errorMessage}
             FormHelperTextProps={{ error: true }}
           />
+          {from !== -1 ? (
+            <Box sx={{ marginTop: 1, marginBottom: 1 }}>
+              <Typography variant="body2">
+                贖罪券：{indulgenceCount} 張
+              </Typography>
+              <Typography variant="body2">
+                自動折扣：{formatDiscountPercent(indulgenceDiscount)}%
+              </Typography>
+              {discountedAmount !== null ? (
+                <Typography variant="body2">
+                  折扣後金額：{discountedAmount}
+                </Typography>
+              ) : null}
+            </Box>
+          ) : null}
           <Box
             sx={{
               display: "flex",
@@ -485,16 +471,6 @@ const Transfer = () => {
           >
             Submit
           </Button> */}
-          <Button
-            variant="contained"
-            disabled={amount === 0 || from === to}
-            onClick={handleDiscount}
-            fullWidth
-            sx={{ marginTop: 0 }}
-          >
-            indulgence discount
-          </Button>
-
           <Button
             variant="contained"
             disabled={

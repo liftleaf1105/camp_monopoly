@@ -1279,6 +1279,16 @@ const normalizeTransferPayload = ({ from, to, dollar, IsEstate, landName }) => {
   return payload;
 };
 
+const INDULGENCE_DISCOUNTS = [
+  0, 0.05, 0.075, 0.1, 0.125, 0.15, 0.165, 0.18,
+  0.195, 0.21, 0.225, 0.24, 0.255, 0.27, 0.285, 0.3,
+];
+
+const getIndulgenceDiscount = (count) => {
+  const cappedCount = Math.min(Math.max(Math.floor(Number(count) || 0), 0), 15);
+  return INDULGENCE_DISCOUNTS[cappedCount];
+};
+
 const formatTeamName = (teamId) => `第${String(teamId).padStart(2, "0")}小隊`;
 
 const calcTransfer = async (from, to, amount, isEstate) => {
@@ -1299,7 +1309,10 @@ const calcTransfer = async (from, to, amount, isEstate) => {
 
   var FromAmount = Number(FromTeam.money);
   var ToAmount = Number(ToTeam.money);
-  var TransferAmount = Number(amount);
+  const indulgenceCount = Number(FromTeam.resources?.love) || 0;
+  const indulgenceDiscount = getIndulgenceDiscount(indulgenceCount);
+  const discountedAmount = Math.round(Number(amount) * (1 - indulgenceDiscount));
+  var TransferAmount = discountedAmount;
   const bonusValue = Number(ToTeam.bonus?.value ?? 1);
   console.log(TransferAmount, bonusValue);
   if (isEstate && bonusValue !== 0) TransferAmount *= bonusValue;
@@ -1313,7 +1326,13 @@ const calcTransfer = async (from, to, amount, isEstate) => {
     ToAmount += parseInt(Math.round(TransferAmount * 2));
   else ToAmount += TransferAmount;
   console.log({ from: FromAmount, to: ToAmount });
-  return { from: FromAmount, to: ToAmount };
+  return {
+    from: FromAmount,
+    to: ToAmount,
+    indulgenceCount,
+    indulgenceDiscount,
+    discountedAmount,
+  };
 };
 
 router.post("/transfer", async (req, res) => {
@@ -1384,6 +1403,82 @@ router.get("/transfer", async (req, res) => {
 //   }
 //   console.log("hawkEye updated");
 // }
+
+router.post("/purchaseProperty", async (req, res) => {
+  const teamId = Number(req.body.teamId);
+  const landId = Number(req.body.landId);
+  const mode = req.body.mode;
+
+  if (
+    !Number.isInteger(teamId) ||
+    !Number.isInteger(landId) ||
+    !["Buy", "Upgrade"].includes(mode)
+  ) {
+    return res.status(400).json({ message: "Invalid purchase request" });
+  }
+
+  const [team, land] = await Promise.all([
+    Team.findOne({ id: teamId }),
+    Land.findOne({ id: landId }),
+  ]);
+
+  if (!team || !land) {
+    return res.status(404).json({ message: "Team or building not found" });
+  }
+  if (land.type !== "Building") {
+    return res.status(400).json({ message: "Only buildings can be purchased" });
+  }
+
+  const isBuy = mode === "Buy";
+  if (isBuy && land.owner !== 0) {
+    return res.status(409).json({ message: "Building already has owner" });
+  }
+  if (!isBuy && land.owner !== teamId) {
+    return res.status(409).json({ message: "Only the owner can upgrade" });
+  }
+  if (!isBuy && land.level >= 3) {
+    return res.status(409).json({ message: "Building is already at maximum level" });
+  }
+
+  const cost = Number(isBuy ? land.price?.buy : land.price?.upgrade);
+  if (!Number.isFinite(cost) || cost < 0) {
+    return res.status(400).json({ message: "Invalid property price" });
+  }
+
+  // Deduct only when the latest balance can cover the full purchase price.
+  const updatedTeam = await Team.findOneAndUpdate(
+    { id: teamId, money: { $gte: cost } },
+    { $inc: { money: -cost } },
+    { new: true }
+  );
+  if (!updatedTeam) {
+    return res.status(409).json({ message: "Insufficient money" });
+  }
+
+  const landQuery = isBuy
+    ? { id: landId, owner: 0 }
+    : { id: landId, owner: teamId, level: { $lt: 3 } };
+  const landUpdate = isBuy
+    ? { $set: { owner: teamId, level: 1 } }
+    : { $inc: { level: 1 } };
+  const updatedLand = await Land.findOneAndUpdate(landQuery, landUpdate, {
+    new: true,
+  });
+
+  if (!updatedLand) {
+    await Team.updateOne({ id: teamId }, { $inc: { money: cost } });
+    return res.status(409).json({ message: "Building state changed, please retry" });
+  }
+
+  const groupIds = getSeriesBonusGroup(updatedLand.id);
+  if (groupIds) await recalculateSeriesBonus(groupIds);
+
+  return res.status(200).json({
+    message: `${mode} successful`,
+    money: updatedTeam.money,
+    land: updatedLand,
+  });
+});
 
 router.post("/ownership", async (req, res) => {
   const { teamId, land, level } = req.body;
