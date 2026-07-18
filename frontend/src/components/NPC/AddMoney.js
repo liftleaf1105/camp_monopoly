@@ -31,7 +31,6 @@ const AddMoney = () => {
   const [team, setTeam] = useState(-1);
   const [teamData, setTeamData] = useState({});
   const [newData, setNewData] = useState(0);
-  const [checkMessage, setCheckMessage] = useState("");
 
   const [amount, setAmount] = useState("0");
   const [errorMessage, setErrorMessage] = useState("");
@@ -39,12 +38,16 @@ const AddMoney = () => {
   const [building, setBuilding] = useState(-1);
   const [price, setPrice] = useState({});
   const [buildingOwner, setBuildingOwner] = useState(0);
+  const [purchaseMode, setPurchaseMode] = useState(null);
+  const [purchaseError, setPurchaseError] = useState("");
 
   const [showPreview, setShowPreview] = useState(false);
   const { roleId, filteredBuildings, setNavBarId } = useContext(RoleContext);
   const navigate = useNavigate();
 
   const handleTeam = async (team) => {
+    setPurchaseMode(null);
+    setPurchaseError("");
     if (amount !== "-" && amount !== "" && team !== -1) {
       setShowPreview(true);
     } else {
@@ -54,15 +57,6 @@ const AddMoney = () => {
     // console.log(data);
     setTeamData(data);
     setTeam(team);
-  };
-
-  const checkPropertyCost = async (mode) => {
-    const payload = { team: team, building: building, mode: mode };
-    const {
-      data: { message },
-    } = await axios.post("/checkPropertyCost", payload);
-    console.log(message);
-    setCheckMessage(message);
   };
 
   const handleAmount = async (amount) => {
@@ -85,6 +79,8 @@ const AddMoney = () => {
       setPrice({});
       setBuildingOwner(0);
     }
+    setPurchaseMode(null);
+    setPurchaseError("");
     // console.log(data);
   };
 
@@ -150,15 +146,26 @@ const AddMoney = () => {
     setNavBarId(2);
   };
 
-  const handleSubmitAndSetOwnership = async () => {
-    const payload = {
-      id: team,
-      teamname: `第${team}小隊`,
-      dollar: parseInt(amount) ? parseInt(amount) : 0,
-    };
-    await axios.post("/add", payload);
-    navigate("/setownership?id=" + building + "&team=" + team);
-    setNavBarId(6);
+  const handlePurchaseProperty = async () => {
+    try {
+      await axios.post("/purchaseProperty", {
+        teamId: team,
+        landId: building,
+        mode: purchaseMode,
+      });
+      navigate("/properties?id=" + building);
+      setNavBarId(3);
+    } catch (error) {
+      setPurchaseError(
+        error.response?.data?.message || "Unable to complete property purchase"
+      );
+    }
+  };
+
+  const selectPropertyPurchase = (mode, cost) => {
+    setPurchaseMode(mode);
+    setPurchaseError("");
+    handleAmount(String(-cost));
   };
 
   const SimpleMoneyButton = ({ val }) => {
@@ -168,6 +175,8 @@ const AddMoney = () => {
         disabled={team === -1}
         sx={{ marginBottom: 1, width: 80 }}
         onClick={() => {
+          setPurchaseMode(null);
+          setPurchaseError("");
           if (!amount) {
             handleAmount(val);
           } else {
@@ -212,16 +221,29 @@ const AddMoney = () => {
   const canUpgrade =
     team !== -1 &&
     price.upgrade &&
-    selectedTeamOwnsBuilding;
+    selectedTeamOwnsBuilding &&
+    Number(teamData.money) >= Number(price.upgrade);
   const canBuy =
     team !== -1 &&
     price.buy &&
-    !hasBuildingOwner;
-  const canSubmitAndSetOwnership =
+    !hasBuildingOwner &&
+    Number(teamData.money) >= Number(price.buy);
+  const propertyCost =
+    purchaseMode === "Buy" ? Number(price.buy) : Number(price.upgrade);
+  const canPurchaseProperty =
     team !== -1 &&
-    amount !== "0" &&
     building !== -1 &&
-    !selectedTeamBlockedByOwner;
+    ["Buy", "Upgrade"].includes(purchaseMode) &&
+    Number(teamData.money) >= propertyCost;
+  const visiblePropertyCost = !hasBuildingOwner
+    ? Number(price.buy)
+    : selectedTeamOwnsBuilding
+    ? Number(price.upgrade)
+    : NaN;
+  const hasInsufficientPropertyFunds =
+    team !== -1 &&
+    Number.isFinite(visiblePropertyCost) &&
+    Number(teamData.money) < visiblePropertyCost;
 
   return (
     <Container component="main" maxWidth="xs">
@@ -261,6 +283,8 @@ const AddMoney = () => {
                 if (Math.abs(parseInt(e.target.value)) > 1000000) {
                   setErrorMessage("Too Large");
                 } else {
+                  setPurchaseMode(null);
+                  setPurchaseError("");
                   handleAmount(e.target.value ? e.target.value : "");
                   setErrorMessage("");
                 }
@@ -305,8 +329,7 @@ const AddMoney = () => {
               disabled={!canBuy}
               sx={{ marginBottom: 1, width: 80 }}
               onClick={() => {
-                handleAmount(-1 * price.buy);
-                checkPropertyCost("Buy");
+                selectPropertyPurchase("Buy", price.buy);
               }}
             >
               Buy
@@ -316,8 +339,7 @@ const AddMoney = () => {
               disabled={!canUpgrade}
               sx={{ marginBottom: 1, width: 80 }}
               onClick={() => {
-                handleAmount(-1 * price.upgrade);
-                checkPropertyCost("Upgrade");
+                selectPropertyPurchase("Upgrade", price.upgrade);
               }}
             >
               Upgrade
@@ -327,6 +349,14 @@ const AddMoney = () => {
             <FormHelperText error={true}>
               此地已有地主，只有第{buildingOwner}小隊可以升級。
             </FormHelperText>
+          ) : null}
+          {hasInsufficientPropertyFunds ? (
+            <FormHelperText error={true}>
+              Insufficient money to buy or upgrade this property.
+            </FormHelperText>
+          ) : null}
+          {purchaseError ? (
+            <FormHelperText error={true}>{purchaseError}</FormHelperText>
           ) : null}
           {/* <Box
             sx={{
@@ -377,8 +407,8 @@ const AddMoney = () => {
               <Box display="flex" flexDirection="row" justifyContent="center">
                 <Button
                   variant="contained"
-                  disabled={!canSubmitAndSetOwnership}
-                  onClick={handleSubmitAndSetOwnership}
+                  disabled={!canPurchaseProperty}
+                  onClick={handlePurchaseProperty}
                   fullWidth
                 >
                   <SendIcon />
