@@ -14,6 +14,8 @@ import {
   Typography,
 } from "@mui/material";
 import RoleContext from "../useRole";
+import Loading from "../Loading";
+import axios from "../axios";
 
 const formatMoney = (value) => Math.round(value || 0).toLocaleString();
 const propertyCount = (item, level) =>
@@ -23,15 +25,44 @@ const AccountingResult = () => {
   const { role } = useContext(RoleContext);
   const location = useLocation();
   const navigate = useNavigate();
-  const results = location.state?.results || [];
-  const count = location.state?.count;
+  const hasNavigationResult = Array.isArray(location.state?.results);
+  const [results, setResults] = React.useState(location.state?.results || []);
+  const [count, setCount] = React.useState(location.state?.count);
+  const [loading, setLoading] = React.useState(!hasNavigationResult);
 
   React.useEffect(() => {
     if (role !== "admin") {
       navigate("/permission");
+      return undefined;
     }
+
+    if (hasNavigationResult) return undefined;
+
+    let ignore = false;
+    axios
+      .get("/accounting")
+      .then((res) => {
+        if (ignore) return;
+        const latestResult = res.data?.latestResult;
+        setCount(latestResult?.count);
+        setResults(latestResult?.results || []);
+      })
+      .catch(() => {
+        if (!ignore) setResults([]);
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
     <Container component="main" maxWidth="md">
@@ -79,7 +110,7 @@ const AccountingResult = () => {
               <Table
                 aria-label="final-accounting-result"
                 size="small"
-                sx={{ minWidth: 620 }}
+                sx={{ minWidth: 720 }}
               >
                 <TableHead>
                   <TableRow>
@@ -87,6 +118,7 @@ const AccountingResult = () => {
                     <TableCell align="center">現金</TableCell>
                     <TableCell align="center">物資價值</TableCell>
                     <TableCell align="center">房地產價值</TableCell>
+                    <TableCell align="center">破產次數</TableCell>
                     <TableCell align="center">總和</TableCell>
                   </TableRow>
                 </TableHead>
@@ -100,6 +132,9 @@ const AccountingResult = () => {
                       </TableCell>
                       <TableCell align="center">
                         {formatMoney(item.propertyValue)}
+                      </TableCell>
+                      <TableCell align="center">
+                        {item.bankruptcyCount || 0}
                       </TableCell>
                       <TableCell align="center">{formatMoney(item.total)}</TableCell>
                     </TableRow>

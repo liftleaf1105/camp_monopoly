@@ -4,6 +4,7 @@ const TeamSchema = new Schema({
   id: Number,
   teamname: String,
   money: Number,
+  bankruptcyCount: { type: Number, default: 0 },
   resources: {
     love: Number,
     eecoin: Number,

@@ -8,6 +8,7 @@ import Pair from "../models/pair.js";
 import Effect from "../models/effect.js";
 import Broadcast from "../models/broadcast.js";
 import Resource from "../models/resource.js";
+import AccountingResult from "../models/accountingResult.js";
 const router = express.Router();
 
 const getGameBonus = async () =>
@@ -42,7 +43,7 @@ const SERIES_BONUS_MULTIPLIERS = [1, 1.25, 1.5];
 const getBaseRent = (land) => {
   const buyPrice = land.price && land.price.buy;
   if (!buyPrice) return land.rent;
-  return [0.2, 0.4, 1].map((multiplier) =>
+  return [0.2, 0.6, 1.4].map((multiplier) =>
     Math.round(buyPrice * multiplier)
   );
 };
@@ -141,6 +142,37 @@ router
 //   return money;
 // }
 
+const shouldRecordBankruptcy = (previousMoney, nextMoney) =>
+  Math.round(Number(previousMoney) || 0) >= 0 &&
+  Math.round(Number(nextMoney) || 0) < 0;
+
+const emitBankruptcyBroadcast = async (team, io) => {
+  if (!io) return;
+  const message = {
+    title: "破產!!!",
+    description: team.teamname,
+    level: 0,
+    createdAt: Date.now(),
+  };
+  await new Broadcast(message).save();
+  io.emit("broadcast", message);
+};
+
+const setTeamMoney = async (team, nextMoney, io) => {
+  const final = Math.round(Number(nextMoney) || 0);
+  const becameBankrupt = shouldRecordBankruptcy(team.money, final);
+
+  team.money = final;
+  if (becameBankrupt) {
+    team.bankruptcyCount = (Number(team.bankruptcyCount) || 0) + 1;
+  }
+
+  await team.save();
+  if (becameBankrupt) await emitBankruptcyBroadcast(team, io);
+
+  return team;
+};
+
 async function updateTeam(team, moneyChanged, io, saved) {
   const teamObj = await Team.findOne({ id: team });
   var ratio = 1;
@@ -149,23 +181,8 @@ async function updateTeam(team, moneyChanged, io, saved) {
     else ratio = 1.5;
   }
   let final = Math.round(teamObj.money + moneyChanged * ratio);
-  if (saved && teamObj.money >= 0 && final < 0) {
-    const message = {
-      title: "破產!!!",
-      description: teamObj.teamname,
-      level: 0,
-      createdAt: Date.now(),
-    };
-    await new Broadcast(message).save();
-    io.emit("broadcast", message);
-  }
   if (saved) {
-    const temp = await Team.findOneAndUpdate(
-      { id: team },
-      { money: final },
-      { new: true } //return the item after update
-    );
-    return temp;
+    return setTeamMoney(teamObj, final, io);
   } else {
     return { money: final };
   }
@@ -182,20 +199,29 @@ const cardNames = {
 
 const toId = (value) => parseInt(value, 10);
 
-const emitCardNotice = (io, targetTeamId, ownerId, cardName, message) => {
-  io.emit("broadcast", {
+const emitSavedBroadcast = async (io, message) => {
+  const notice = {
+    ...message,
+    createdAt: message.createdAt || Date.now(),
+  };
+  await new Broadcast(notice).save();
+  io.emit("broadcast", notice);
+  return notice;
+};
+
+const emitCardNotice = async (io, targetTeamId, ownerId, cardName, message) => {
+  await emitSavedBroadcast(io, {
     title: "卡片發動",
     description: `第${ownerId}小隊發動了${cardName}，${message}`,
     targetTeamId,
+    category: "card",
   });
 };
 
-const updateTeamMoneyDirectly = async (teamId, delta) => {
+const updateTeamMoneyDirectly = async (teamId, delta, io) => {
   const team = await Team.findAndCheckValid(teamId);
   if (!team) return null;
-  team.money = Math.round(team.money + delta);
-  await team.save();
-  return team;
+  return setTeamMoney(team, team.money + delta, io);
 };
 
 const calcTotalAsset = (team, resourcePrices) => {
@@ -542,12 +568,12 @@ async function deleteTimeoutNotification() {
 //   });
 
 router.get("/team", async (req, res) => {
-  const teams = await Team.find().sort({ teamname: 1 });
+  const teams = await Team.find().select("-bankruptcyCount").sort({ teamname: 1 });
   res.json(teams).status(200);
 });
 
 router.get("/teamRich", async (req, res) => {
-  const teams = await Team.find().sort({ money: -1 });
+  const teams = await Team.find().select("-bankruptcyCount").sort({ money: -1 });
   const team = teams[0];
   console.log(team);
   res.json(team).status(200);
@@ -590,7 +616,9 @@ router.post("/checkPropertyCost", async (req, res) => {
 });
 
 router.get("/team/:teamId", async (req, res) => {
-  const team = await Team.findOne({ id: req.params.teamId });
+  const team = await Team.findOne({ id: req.params.teamId }).select(
+    "-bankruptcyCount"
+  );
   res.json(team).status(200);
 });
 
@@ -616,7 +644,12 @@ router.get("/property/:teamId", async (req, res) => {
 
 router.post("/set", async (req, res) => {
   const { id, amount } = req.body;
-  await Team.findOneAndUpdate({ id: parseInt(id) }, { money: amount });
+  const team = await Team.findOne({ id: parseInt(id) });
+  if (!team) {
+    res.status(404).json({ success: false, message: "Team not found" });
+    return;
+  }
+  await setTeamMoney(team, amount, req.io);
   res.json({ success: true }).status(200);
 });
 
@@ -727,44 +760,29 @@ router.post("/updateResourcePrice", async (req, res) => {
 
 router.post("/sellResource", async (req, res) => {
   const { teamId, resourceId, number, mode } = req.body;
-  const team = await Team.collection.findOne({ id: teamId });
-  const resource = await Resource.collection.findOne({ id: resourceId });
+  const team = await Team.findOne({ id: teamId });
+  const resource = await Resource.findOne({ id: resourceId });
+  const amount = Number(number);
+  if (!team || !resource || !Number.isFinite(amount)) {
+    res.status(400).json({ message: "Invalid team, resource, or amount" });
+    return;
+  }
 
   if (mode === 0) {//sell
     if(resourceId == 0){ //love
-      await Team.findOneAndUpdate(
-        { id: teamId },
-        { 
-          resources: { love : team.resources.love - number, eecoin : team.resources.eecoin },
-          money: team.money + resource.price * number
-        }
-      );
+      team.resources.love -= amount;
+      await setTeamMoney(team, team.money + resource.price * amount, req.io);
     }else if(resourceId == 1){ //eecoin
-      await Team.findOneAndUpdate(
-        { id: teamId },
-        {
-          resources: {love : team.resources.love, eecoin : team.resources.eecoin - number},
-          money: team.money + resource.price * number
-        }
-      );
+      team.resources.eecoin -= amount;
+      await setTeamMoney(team, team.money + resource.price * amount, req.io);
     }
   } else if (mode === 1) {//buy
     if(resourceId == 0){
-      await Team.findOneAndUpdate(//love
-        { id: teamId },
-        {
-          resources: { love: Number(team.resources.love) + Number(number), eecoin: team.resources.eecoin },
-          money: team.money - resource.price * number,
-        }
-      );
+      team.resources.love = Number(team.resources.love) + amount;
+      await setTeamMoney(team, team.money - resource.price * amount, req.io);
     }else if(resourceId == 1){//eecoin
-      await Team.findOneAndUpdate(
-        { id: teamId },
-        {
-          resources: { love: team.resources.love, eecoin: Number(team.resources.eecoin) + Number(number) },
-          money: team.money - resource.price * number,
-        }
-      );
+      team.resources.eecoin = Number(team.resources.eecoin) + amount;
+      await setTeamMoney(team, team.money - resource.price * amount, req.io);
     }
   }
   
@@ -777,10 +795,9 @@ router.post("/percent", async (req, res) => {
     const teams = await Team.find();
 
     // Update each team's money by reducing it by 30%
-    teams.forEach(async (team) => {
-      team.money = team.money * 0.7; // Reduce money by 30%
-      await team.save(); // Save the updated team
-    });
+    await Promise.all(
+      teams.map((team) => setTeamMoney(team, team.money * 0.7, req.io))
+    );
 
     res.status(200).json({ message: "Money reduced by 30% for all teams" });
   } catch (err) {
@@ -852,12 +869,12 @@ const eventDefinitions = [
   {
     id: 5,
     title: "男同俱樂部",
-    description: "男隊輔被發現剽竊畫作，需要小隊員前往監獄贖人",
+    description: "男隊輔因為被發現剽竊畫作進監獄，小隊員可花20000贖回男隊輔",
   },
   {
     id: 6,
     title: "黑死病",
-    description: "各組消耗大量資源對付疾病，各組所有資源減少40%(四捨五入)",
+    description: "各組消耗大量資源對付疾病，各組物資減少40% (四捨五入)",
   },
   {
     id: 7,
@@ -868,7 +885,7 @@ const eventDefinitions = [
   {
     id: 8,
     title: "魔法失效",
-    description: "遊戲結束前無法使用卡片效果，同時EE幣又暴跌",
+    description: "遊戲結束前無法使用狗叫卡以外的技能卡，同時EE幣又暴跌",
   },
 ];
 
@@ -894,12 +911,19 @@ router.post("/reset", async(req, res) =>{
     await Team.updateMany(
       {},
       {
-        $set: { money: 40000, "resources.eecoin": 0, "resources.love": 0 },
+        $set: {
+          money: 40000,
+          bankruptcyCount: 0,
+          "resources.eecoin": 0,
+          "resources.love": 0,
+        },
         $unset: { bank: "", deposit: "" },
       }
     );
-    await Resource.updateMany({}, { $set: { price: 10000 } });
+    await Resource.findOneAndUpdate({ id: 0 }, { price: 10000 });
+    await Resource.findOneAndUpdate({ id: 1 }, { price: 5000 });
     await Land.updateMany({}, { $set: { owner: 0, level: 0 } });
+    await AccountingResult.deleteMany({});
 
     res.json("Success").status(200);
   } catch (err) {
@@ -912,14 +936,14 @@ const getEventDefinition = (id) =>
   eventDefinitions.find((event) => event.id === id);
 
 const eventResourcePrices = {
-  1: { love: 9000, eecoin: 12000 },
-  2: { love: 10000, eecoin: 15000 },
-  3: { love: 11000, eecoin: 30000 },
-  4: { love: 12000, eecoin: 1000 },
-  5: { love: 8000, eecoin: 5000 },
-  6: { love: 10500, eecoin: 2000 },
-  7: { love: 9000, eecoin: 15000 },
-  8: { love: 10000, eecoin: 100 },
+  1: { love: 9000, eecoin: 3500 },
+  2: { love: 10000, eecoin: 7500 },
+  3: { love: 11000, eecoin: 15000 },
+  4: { love: 12000, eecoin: 1500 },
+  5: { love: 8000, eecoin: 500 },
+  6: { love: 10500, eecoin: 1000 },
+  7: { love: 9000, eecoin: 4000 },
+  8: { love: 10000, eecoin: 50 },
 };
 
 const updateResourcePrices = async (prices) => {
@@ -947,8 +971,7 @@ router
         case 1: {
           const teams = await Team.find();
           for (let i = 0; i < teams.length; i++) {
-            teams[i].money = Math.round(teams[i].money * 0.7);
-            await teams[i].save();
+            await setTeamMoney(teams[i], teams[i].money * 0.7, req.io);
           }
           break;
         }
@@ -1070,8 +1093,7 @@ router
 router.post("/tape", async (req, res) => {
   const teams = await Team.find();
   for (let i = 0; i < teams.length; i++) {
-    teams[i].money -= 5000;
-    await teams[i].save();
+    await setTeamMoney(teams[i], teams[i].money - 5000, req.io);
   }
   req.io.emit("broadcast", {
     title: "紙膠帶發動",
@@ -1085,15 +1107,20 @@ router.post("/goldenFruit", async (req, res) => {
   const land = await Land.find({ id: building });
   const level = land[0].level;
   const targetTeam = await Team.find({ id: land[0].owner });
-  targetTeam[0].money +=
-    Math.round(
-      (land[0].price.buy + (land[0].level - 1) * land[0].price.upgrade) * 0.07
-    ) * 10;
+  await setTeamMoney(
+    targetTeam[0],
+    targetTeam[0].money +
+      Math.round(
+        (land[0].price.buy + (land[0].level - 1) * land[0].price.upgrade) *
+          0.07
+      ) *
+        10,
+    req.io
+  );
 
   land[0].owner = 0;
   land[0].level = 0;
-  targetTeam[0].save();
-  land[0].save();
+  await land[0].save();
   req.io.emit("broadcast", {
     title: "金蔓莓果發動",
     description: `${targetTeam[0].teamname}被使用了金蔓莓果！`,
@@ -1117,10 +1144,7 @@ router
         title: "劫富卡發動",
         description: `第${jeffTeam}小隊遭到劫富！！`,
       });
-      await Team.findOneAndUpdate(
-        { id: jeffTeam },
-        { money: targetTeam[0].money * 0.75 }
-      );
+      await setTeamMoney(targetTeam[0], targetTeam[0].money * 0.75, req.io);
     }
 
     const adjustedDollar = await applyGameBonus(dollar, gameBonus);
@@ -1176,7 +1200,7 @@ router.post("/card", async (req, res) => {
     const land = await Land.findOne({ id: building.id });
     land.level = newLevel;
     await land.save();
-    emitCardNotice(
+    await emitCardNotice(
       req.io,
       target.id,
       ownerId,
@@ -1187,9 +1211,9 @@ router.post("/card", async (req, res) => {
     for (let i = 0; i < moneyChanges.length; i++) {
       const change = moneyChanges[i];
       if (change.delta === 0) continue;
-      await updateTeamMoneyDirectly(change.team.id, change.delta);
+      await updateTeamMoneyDirectly(change.team.id, change.delta, req.io);
       if (card === "Ayi" && cardNotices) continue;
-      emitCardNotice(
+      await emitCardNotice(
         req.io,
         change.team.id,
         ownerId,
@@ -1200,16 +1224,18 @@ router.post("/card", async (req, res) => {
       );
     }
     if (card === "Ayi" && cardNotices) {
-      cardNotices.forEach((notice) => {
+      for (let i = 0; i < cardNotices.length; i++) {
+        const notice = cardNotices[i];
         if (notice.type === "rent") {
-          req.io.emit("broadcast", {
+          await emitSavedBroadcast(req.io, {
             targetTeamId: notice.targetTeamId,
             title: notice.title,
             description: notice.description,
             note: notice.note,
+            category: "card",
           });
         } else {
-          emitCardNotice(
+          await emitCardNotice(
             req.io,
             notice.targetTeamId,
             ownerId,
@@ -1217,7 +1243,7 @@ router.post("/card", async (req, res) => {
             notice.message
           );
         }
-      });
+      }
     }
   }
 
@@ -1256,10 +1282,9 @@ router.post("/soldout", async (req, res) => {
   }
 
   const propertyValue = land.price.buy + land.price.upgrade * (land.level - 1);
-  team.money += Math.round(propertyValue * 0.5);
+  await setTeamMoney(team, team.money + Math.round(propertyValue * 0.5), req.io);
   land.level = 0;
   land.owner = 0;
-  await team.save();
   await land.save();
 
   const groupIds = getSeriesBonusGroup(land.id);
@@ -1275,7 +1300,17 @@ router
       { $setOnInsert: { value: 0 } },
       { new: true, upsert: true }
     );
-    res.status(200).json({ count: pair.value });
+    const latestResult = await AccountingResult.findOne({ key: "latest" });
+    res.status(200).json({
+      count: pair.value,
+      latestResult: latestResult
+        ? {
+            count: latestResult.count,
+            results: latestResult.results || [],
+            createdAt: latestResult.createdAt,
+          }
+        : null,
+    });
   })
   .post("/accounting", async (req, res) => {
     const accountingCount = await Pair.findOneAndUpdate(
@@ -1325,14 +1360,24 @@ router
         resourceValue,
         propertyValue,
         total: cash + resourceValue + propertyValue,
+        bankruptcyCount: teams[i].bankruptcyCount || 0,
         propertyCounts,
       });
 
-      teams[i].money += propertyValue;
-      await teams[i].save();
+      await setTeamMoney(teams[i], teams[i].money + propertyValue, req.io);
     }
     accountingCount.value += 1;
     await accountingCount.save();
+    await AccountingResult.findOneAndUpdate(
+      { key: "latest" },
+      {
+        key: "latest",
+        count: accountingCount.value,
+        results,
+        createdAt: Date.now(),
+      },
+      { new: true, upsert: true }
+    );
     res
       .status(200)
       .json({ message: "Success", count: accountingCount.value, results });
@@ -1370,8 +1415,7 @@ router.post("/equility", async (req, res) => {
     if (teams[i].id === id) order = i;
   }
   if (order + 1 === teams.length) {
-    team[0].money -= 10000;
-    await team[0].save();
+    await setTeamMoney(team[0], team[0].money - 10000, req.io);
     req.io.emit("broadcast", {
       title: "實質平等發動",
       description: `${team[0].teamname}使用了實質平等, 但你太有錢了, 扣除10000元`,
@@ -1380,10 +1424,8 @@ router.post("/equility", async (req, res) => {
     const money =
       Math.round((teams[order].money + teams[order + 1].money) * 0.05) * 10;
 
-    teams[order].money = money;
-    teams[order + 1].money = money;
-    await teams[order].save();
-    await teams[order + 1].save();
+    await setTeamMoney(teams[order], money, req.io);
+    await setTeamMoney(teams[order + 1], money, req.io);
     req.io.emit("broadcast", {
       title: "實質平等發動",
       description: `${team[0].teamname}使用了實質平等, 與${
@@ -1520,8 +1562,10 @@ router.post("/transfer", async (req, res) => {
     console.log("Transfer failed");
     return res.status(403).send("Transfer failed");
   } else {
-    await Team.findOneAndUpdate({ id: from }, { money: data.from });
-    await Team.findOneAndUpdate({ id: to }, { money: data.to });
+    const fromTeam = await Team.findOne({ id: from });
+    const toTeam = await Team.findOne({ id: to });
+    await setTeamMoney(fromTeam, data.from, req.io);
+    await setTeamMoney(toTeam, data.to, req.io);
     if (IsEstate) {
       req.io.emit("broadcast", {
         targetTeamId: to,
@@ -1696,14 +1740,12 @@ router.post("/acquire", async (req, res) => {
   const originOwner = target[0].owner;
   const originTeam = await Team.find({ id: originOwner });
   const newTeam = await Team.find({ id: teamId });
-  originTeam[0].money +=
+  const acquisitionPrice =
     target[0].price.buy + (target[0].level - 1) * target[0].price.upgrade;
-  newTeam[0].money -=
-    target[0].price.buy + (target[0].level - 1) * target[0].price.upgrade;
+  await setTeamMoney(originTeam[0], originTeam[0].money + acquisitionPrice, req.io);
+  await setTeamMoney(newTeam[0], newTeam[0].money - acquisitionPrice, req.io);
   target[0].owner = teamId;
 
-  await originTeam[0].save();
-  await newTeam[0].save();
   await target[0].save();
   res.json("Success").status(200);
 });

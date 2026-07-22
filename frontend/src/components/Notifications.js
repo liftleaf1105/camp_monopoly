@@ -2,96 +2,62 @@ import React, { useState, useEffect, useContext } from "react";
 import {
   Stack,
   Container,
-  Grid,
   Card,
   CardContent,
   Typography,
   Box,
-  Tab,
-  Tabs,
   Snackbar,
   Alert,
   AlertTitle,
   IconButton,
-  // Table,
-  // TableContainer,
-  // TableRow,
-  // TableCell,
-  // TableHead,
-  // TableBody,
-  // Paper,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
+import CloseIcon from "@mui/icons-material/Close";
 import Loading from "./Loading";
 import axios from "./axios";
 import RoleContext from "./useRole";
-
-const eventTitles = new Set([
-  "海盜搶劫",
-  "獵巫行動",
-  "大航海時代",
-  "法國大革命",
-  "男同俱樂部",
-  "黑死病",
-  "十字軍東征",
-  "魔法失效",
-]);
+import { socket } from "../websocket";
 
 const Notifications = () => {
-  const [val, setVal] = useState(0); //tab value
-  const [messages, setMessages] = useState([]); //temporary message
-  const [permMessages, setPermMessages] = useState([]); //permanent message
-  const [eventMessage, setEventMessage] = useState({}); //event
-  const [broadcast, setBroadcast] = useState([]); //historical broadcasts
-  const [open, setOpen] = useState(false); //snackbar open
+  const [eventMessage, setEventMessage] = useState({});
+  const [cardMessages, setCardMessages] = useState([]);
+  const [open, setOpen] = useState(false);
   const { roleId, setUnreadCount } = useContext(RoleContext);
 
-  //tab components
-  const handleChange = (e, val) => {
-    setVal(val);
-  };
-
-  const TabPanel = ({ children, value, index }) => {
-    return (
-      <div hidden={value !== index} id={index}>
-        {value === index && <Box>{children}</Box>}
-      </div>
-    );
-  };
-
-  const tabprops = (idx) => {
-    return { id: idx };
-  };
-
-  //fetch data
-  const FetchEvent = async () => {
+  const fetchEvent = async () => {
     const { data } = await axios.get("/event");
-    if (data !== null) setEventMessage(data); //avoid 0 state
+    if (data !== null) setEventMessage(data);
   };
 
-  const FetchMessages = async () => {
-    const { data } = await axios.get("/notifications");
-    const temporary = data.filter((item) => item.type === "temporary");
-    const permanent = data.filter(
-      (item) =>
-        (item.type === "permenant" || item.type === "permanent") &&
-        !eventTitles.has(item.title)
-    );
-    setMessages(temporary);
-    setPermMessages(permanent);
-  };
-
-  const FetchBroadcast = async () => {
+  const fetchCardMessages = async () => {
     const { data } = await axios.get("/broadcast");
-    setBroadcast(data);
+    setCardMessages(data.filter((item) => item.category === "card"));
+  };
+
+  const addCardMessage = (message) => {
+    setCardMessages((messages) => {
+      if (messages.some((item) => item.createdAt === message.createdAt)) {
+        return messages;
+      }
+      return [message, ...messages];
+    });
+  };
+
+  const canSeeCardMessage = (item) => {
+    const viewerId = Number(roleId) || 0;
+    if (viewerId === 100) return true;
+    if (item.targetTeamId !== undefined && item.targetTeamId !== null) {
+      return viewerId === Number(item.targetTeamId);
+    }
+    return viewerId >= Number(item.level || 0);
   };
 
   const handleDelete = async (createdAt) => {
     await axios
       .delete(`/broadcast/${createdAt}`)
-      .then((res) => {
-        setBroadcast(broadcast.filter((item) => item.createdAt !== createdAt));
-        console.log("Successfully deleted");
+      .then(() => {
+        setCardMessages((messages) =>
+          messages.filter((item) => item.createdAt !== createdAt)
+        );
         setOpen(true);
       })
       .catch((err) => {
@@ -100,14 +66,11 @@ const Notifications = () => {
   };
 
   const handleClose = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
+    if (reason === "clickaway") return;
     setOpen(false);
   };
 
   useEffect(() => {
-    //fetch event, messages, and historical broadcast from backend
     const reloadCount = sessionStorage.getItem("reloadCount");
     if (reloadCount < 1) {
       sessionStorage.setItem("reloadCount", String(reloadCount + 1));
@@ -119,199 +82,131 @@ const Notifications = () => {
     setUnreadCount(0);
     localStorage.setItem("notifLastSeen", String(Date.now()));
 
-    FetchEvent();
-    FetchMessages();
-    FetchBroadcast();
+    fetchEvent();
+    fetchCardMessages();
 
-    // refresh every 15 seconds
+    const handleBroadcast = (message) => {
+      if (message.category === "card") addCardMessage(message);
+    };
+
+    socket.on("broadcast", handleBroadcast);
+
     const interval = setInterval(async () => {
-      await FetchEvent();
-      await FetchMessages();
-      await FetchBroadcast();
+      await fetchEvent();
+      await fetchCardMessages();
     }, 15000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      socket.off("broadcast", handleBroadcast);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const TimedComponent = ({ id, duration, title, content, createdAt }) => {
-    const [elapsed, setElapsed] = useState(
-      duration - Math.floor(Date.now() / 1000 - createdAt)
-    );
-
-    useEffect(() => {
-      const calculate = () => {
-        const temp = duration - Math.floor(Date.now() / 1000 - createdAt);
-        // console.log(temp);
-        setElapsed(temp);
-      };
-
-      const task = setInterval(() => {
-        calculate();
-      }, 1000);
-      return () => clearInterval(task);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-    if (elapsed < 0) return null;
-    else
-      return (
-        <Card key={id} sx={{ display: "flex", flexDirection: "column" }}>
-          <CardContent>
-            <Grid container spacing={2}>
-              <Grid item xs={9}>
-                <Typography variant="h6">{title}</Typography>
-              </Grid>
-              <Grid item xs={3} sx={{ alignItems: "flex-end" }}>
-                <Typography variant="body1">
-                  {Math.floor(elapsed / 60)} :{" "}
-                  {elapsed % 60 > 9 ? elapsed % 60 : "0" + (elapsed % 60)}
-                </Typography>
-              </Grid>
-            </Grid>
-            <Typography variant="body2">{content}</Typography>
-          </CardContent>
-        </Card>
-      );
-  };
-
-  const broadcastType = (level) => {
-    if (level === null || level === undefined) return "info";
-    else if (level >= 100) return "error";
-    else if (level >= 50) return "warning";
-    else return "info";
-  };
-
   if (eventMessage.title === undefined) {
     return <Loading />;
-  } else {
-    return (
-      <Container component="main" maxWidth="xs">
+  }
+
+  const visibleCardMessages = cardMessages.filter(canSeeCardMessage);
+
+  return (
+    <Container component="main" maxWidth="xs">
+      <Stack
+        spacing={2}
+        sx={{
+          maxWidth: 700,
+          marginTop: "70px",
+          marginLeft: "20px",
+          marginRight: "20px",
+          marginBottom: 10,
+        }}
+      >
         <Box>
-          <Tabs
-            value={val}
-            onChange={handleChange}
-            variant="fullWidth"
-            sx={{ marginTop: "70px" }}
+          <Typography component="h1" variant="h6" sx={{ marginBottom: 1 }}>
+            Event
+          </Typography>
+          <Card
+            sx={{
+              backgroundColor: "rgb(60,60,60)",
+              color: "rgb(255,255,255)",
+            }}
           >
-            <Tab label="current" {...tabprops(0)} />
-            {/* <Tab label="history" {...tabprops(1)} /> */}
-          </Tabs>
+            <CardContent>
+              <Typography variant="h6">
+                事件：{eventMessage ? eventMessage.title : "無"}
+              </Typography>
+              <Typography variant="body2">{eventMessage.description}</Typography>
+              <Typography variant="body2">{eventMessage.note}</Typography>
+            </CardContent>
+          </Card>
         </Box>
 
-        <TabPanel value={val} index={0}>
-          <Stack
-            spacing={1}
-            sx={{
-              maxWidth: 700,
-              marginTop: "10px",
-              marginLeft: "20px",
-              marginRight: "20px",
-            }}
-          >
-            <Card
-              sx={{
-                backgroundColor: "rgb(60,60,60)",
-                color: "rgb(255,255,255)",
-              }}
-            >
-              <CardContent>
-                <Typography variant="h6">
-                  事件：{eventMessage ? eventMessage.title : "無"}
-                </Typography>
-                <Typography variant="body2">
-                  {eventMessage.description}
-                </Typography>
-                <Typography variant="body2">{eventMessage.note}</Typography>
-              </CardContent>
-            </Card>
-            {permMessages &&
-              permMessages.map((item) => (
-                // <Card key={item.id}>
-                //   <CardContent>
-                //     <Typography variant="subtitle1">{item.title}</Typography>
-                //     <Typography variant="body2">{item.description}</Typography>
-                //   </CardContent>
-                // </Card>
-                <Card
-                  key={item.id}
-                  sx={{ display: "flex", flexDirection: "column" }}
-                >
-                  <CardContent>
-                    <Typography variant="h6">{item.title}</Typography>
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-line" }}>
-                      {item.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              ))}
-            {messages &&
-              messages.map((item) => (
-                <TimedComponent
-                  id={item.id}
-                  duration={item.duration}
-                  title={item.title}
-                  content={item.description}
-                  createdAt={item.createdAt}
-                />
-              ))}
-          </Stack>
-        </TabPanel>
-        <TabPanel value={val} index={1}>
-          <Stack
-            spacing={1}
-            sx={{
-              marginTop: "10px",
-              marginBottom: 10,
-              mx: "auto",
-              alignItems: "center",
-            }}
-          >
-            {broadcast &&
-              broadcast.map(
-                (item) =>
-                  roleId >= item.level && (
-                    <Alert
-                      key={broadcast.indexOf(item)}
-                      sx={{ width: "90%" }}
-                      severity={broadcastType(item.level)}
-                      elevation={6}
-                      variant="filled"
-                      action={
-                        roleId !== 100 ? (
-                          <Typography variant="caption">
-                            {new Date(item.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: false,
-                            })}
-                          </Typography>
-                        ) : (
-                          <IconButton
-                            onClick={() => handleDelete(item.createdAt)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        )
-                      }
+        <Box>
+          <Typography component="h2" variant="h6" sx={{ marginBottom: 1 }}>
+            Card
+          </Typography>
+          <Stack spacing={1}>
+            {visibleCardMessages.length === 0 ? (
+              <Card>
+                <CardContent>
+                  <Typography variant="body2" color="text.secondary">
+                    目前沒有卡片通知
+                  </Typography>
+                </CardContent>
+              </Card>
+            ) : (
+              visibleCardMessages.map((item) => (
+                <Alert
+                  key={item._id || item.createdAt}
+                  severity="info"
+                  elevation={3}
+                  action={
+                    <IconButton
+                      aria-label="delete card notification"
+                      color="inherit"
+                      size="small"
+                      onClick={() => handleDelete(item.createdAt)}
                     >
-                      <AlertTitle>{String(item.title)}</AlertTitle>
-                      {String(item.description)}
-                    </Alert>
-                  )
-              )}
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  }
+                >
+                  <AlertTitle>{String(item.title)}</AlertTitle>
+                  <Typography variant="body2" sx={{ whiteSpace: "pre-line" }}>
+                    {String(item.description)}
+                  </Typography>
+                  {item.note ? (
+                    <Typography
+                      variant="caption"
+                      sx={{ display: "block", whiteSpace: "pre-line" }}
+                    >
+                      {String(item.note)}
+                    </Typography>
+                  ) : null}
+                  <Typography variant="caption" sx={{ display: "block" }}>
+                    {new Date(item.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false,
+                    })}
+                  </Typography>
+                </Alert>
+              ))
+            )}
           </Stack>
-          <Snackbar
-            open={open}
-            autoHideDuration={2000}
-            onClose={handleClose}
-            sx={{ marginBottom: 10 }}
-          >
-            <Alert severity="success" variant="filled">
-              Successfully deleted
-            </Alert>
-          </Snackbar>
-        </TabPanel>
-      </Container>
-    );
-  }
+        </Box>
+      </Stack>
+      <Snackbar
+        open={open}
+        autoHideDuration={2000}
+        onClose={handleClose}
+        sx={{ marginBottom: 10 }}
+      >
+        <Alert severity="success" variant="filled">
+          Successfully deleted
+        </Alert>
+      </Snackbar>
+    </Container>
+  );
 };
+
 export default Notifications;

@@ -9,6 +9,7 @@ import Broadcast from "../models/broadcast.js";
 import Event from "../models/event.js";
 import Pair from "../models/pair.js";
 import Effect from "../models/effect.js";
+import AccountingResult from "../models/accountingResult.js";
 
 dotenv.config();
 
@@ -75,6 +76,7 @@ const teams = [
     teamname: "第01小隊",
     // occupation: "N/A",
     money: 40000,
+    bankruptcyCount: 0,
     resourcesName: { love: "贖罪券", eecoin: "EE幣" },
     resources: { love: 0, eecoin: 0, cola: 0, wood: 0, metal: 0 },
     bonus: { value: 1.0, time: 0, duration: 0 },
@@ -85,6 +87,7 @@ const teams = [
     teamname: "第02小隊",
     // occupation: "N/A",
     money: 40000,
+    bankruptcyCount: 0,
     resourcesName: { love: "贖罪券", eecoin: "EE幣" },
     resources: { love: 0, eecoin: 0, cola: 0, wood: 0, metal: 0 },
     bonus: { value: 1.0, time: 0, duration: 0 },
@@ -95,6 +98,7 @@ const teams = [
     teamname: "第03小隊",
     // occupation: "N/A",
     money: 40000,
+    bankruptcyCount: 0,
     resourcesName: { love: "贖罪券", eecoin: "EE幣" },
     resources: { love: 0, eecoin: 0, cola: 0, wood: 0, metal: 0 },
     bonus: { value: 1.0, time: 0, duration: 0 },
@@ -105,6 +109,7 @@ const teams = [
     teamname: "第04小隊",
     // occupation: "N/A",
     money: 40000,
+    bankruptcyCount: 0,
     resourcesName: { love: "贖罪券", eecoin: "EE幣" },
     resources: { love: 0, eecoin: 0, cola: 0, wood: 0, metal: 0 },
     bonus: { value: 1.0, time: 0, duration: 0 },
@@ -115,6 +120,7 @@ const teams = [
     teamname: "第05小隊",
     // occupation: "N/A",
     money: 40000,
+    bankruptcyCount: 0,
     resourcesName: { love: "贖罪券", eecoin: "EE幣" },
     resources: { love: 0, eecoin: 0, cola: 0, wood: 0, metal: 0 },
     bonus: { value: 1.0, time: 0, duration: 0 },
@@ -125,6 +131,7 @@ const teams = [
     teamname: "第06小隊",
     // occupation: "N/A",
     money: 40000,
+    bankruptcyCount: 0,
     resourcesName: { love: "贖罪券", eecoin: "EE幣" },
     resources: { love: 0, eecoin: 0, cola: 0, wood: 0, metal: 0 },
     bonus: { value: 1.0, time: 0, duration: 0 },
@@ -135,6 +142,7 @@ const teams = [
     teamname: "第07小隊",
     // occupation: "N/A",
     money: 40000,
+    bankruptcyCount: 0,
     resourcesName: { love: "贖罪券", eecoin: "EE幣" },
     resources: { love: 0, eecoin: 0, cola: 0, wood: 0, metal: 0 },
     bonus: { value: 1.0, time: 0, duration: 0 },
@@ -145,6 +153,7 @@ const teams = [
     teamname: "第08小隊",
     // occupation: "N/A",
     money: 40000,
+    bankruptcyCount: 0,
     resourcesName: { love: "贖罪券", eecoin: "EE幣" },
     resources: { love: 0, eecoin: 0, cola: 0, wood: 0, metal: 0 },
     bonus: { value: 1.0, time: 0, duration: 0 },
@@ -155,6 +164,7 @@ const teams = [
     teamname: "第09小隊",
     // occupation: "N/A",
     money: 40000,
+    bankruptcyCount: 0,
     resourcesName: { love: "贖罪券", eecoin: "EE幣" },
     resources: { love: 0, eecoin: 0, cola: 0, wood: 0, metal: 0 },
     bonus: { value: 1.0, time: 0, duration: 0 },
@@ -165,6 +175,7 @@ const teams = [
     teamname: "第10小隊",
     // occupation: "N/A",
     money: 40000,
+    bankruptcyCount: 0,
     resourcesName: { love: "贖罪券", eecoin: "EE幣" },
     resources: { love: 0, eecoin: 0, cola: 0, wood: 0, metal: 0 },
     bonus: { value: 1.0, time: 0, duration: 0 },
@@ -181,7 +192,7 @@ const resources = [
   {
     id: 1,
     name: "EE幣",
-    price: 10000
+    price: 5000
   },
 ]
 
@@ -196,7 +207,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 10000, upgrade: 6000 },
-    rent: [2000, 4000, 10000],
+    rent: [2000, 6000, 14000],
   },
   {
     id: 3,
@@ -207,7 +218,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 10000, upgrade: 6000 },
-    rent: [2000, 4000, 10000],
+    rent: [2000, 6000, 14000],
   },
   {
     id: 4,
@@ -218,7 +229,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 10000, upgrade: 6000 },
-    rent: [2000, 4000, 10000],
+    rent: [2000, 6000, 14000],
   },
   { id: 5, type: "Game", name: "遊戲格", description: "認真聽規則！" },
   {
@@ -230,7 +241,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy:11000, upgrade: 7000 },
-    rent: [2200, 4400, 11000],
+    rent: [2200, 6600, 15400],
   },
   {
     id: 7,
@@ -241,7 +252,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy:11000, upgrade: 7000 },
-    rent: [2200, 4400, 11000],
+    rent: [2200, 6600, 15400],
   },
   {
     id: 8,
@@ -252,7 +263,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy:11000, upgrade: 7000 },
-    rent: [2200, 4400, 11000],
+    rent: [2200, 6600, 15400],
   },
   { id: 9, type: "Game", name: "遊戲格", description: "認真聽規則！" },
   {
@@ -283,7 +294,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 12000, upgrade: 7000 },
-    rent: [2400, 4800, 12000],
+    rent: [2400, 7200, 16800],
   },
   {
     id: 15,
@@ -294,7 +305,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 12000, upgrade: 7000 },
-    rent: [2400, 4800, 12000],
+    rent: [2400, 7200, 16800],
   },
   {
     id: 16,
@@ -305,7 +316,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 12000, upgrade: 7000 },
-    rent: [2400, 4800, 12000],
+    rent: [2400, 7200, 16800],
   },
   { id: 17, type: "Game", name: "遊戲格", description: "認真聽規則！" },
   {
@@ -317,7 +328,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 14000, upgrade: 9000 },
-    rent: [2800, 5600, 14000],
+    rent: [2800, 8400, 19600],
   },
   {
     id: 19,
@@ -328,7 +339,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 14000, upgrade: 9000 },
-    rent: [2800, 5600, 14000],
+    rent: [2800, 8400, 19600],
   },
   {
     id: 20,
@@ -339,7 +350,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 14000, upgrade: 9000 },
-    rent: [2800, 5600, 14000],
+    rent: [2800, 8400, 19600],
   },
   { id: 21, type: "Game", name: "遊戲格", description: "認真聽規則！" },
   {
@@ -370,7 +381,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 16000, upgrade: 10000 },
-    rent: [3200, 6400, 16000],
+    rent: [3200, 9600, 22400],
   },
   {
     id: 27,
@@ -381,7 +392,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 16000, upgrade: 10000 },
-    rent: [3200, 6400, 16000],
+    rent: [3200, 9600, 22400],
   },
   {
     id: 28,
@@ -392,7 +403,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 16000, upgrade: 10000 },
-    rent: [3200, 6400, 16000],
+    rent: [3200, 9600, 22400],
   },
   { id: 29, type: "Game", name: "遊戲格", description: "認真聽規則！" },
   {
@@ -423,7 +434,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 18000, upgrade: 12000 },
-    rent: [3600, 7200, 18000],
+    rent: [3600, 10800, 25200],
   },
   {
     id: 35,
@@ -434,7 +445,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 18000, upgrade: 12000 },
-    rent: [3600, 7200, 18000],
+    rent: [3600, 10800, 25200],
   },
   {
     id: 36,
@@ -445,7 +456,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy: 18000, upgrade: 12000 },
-    rent: [3600, 7200, 18000],
+    rent: [3600, 10800, 25200],
   },
   {
     id: 37,
@@ -463,7 +474,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy:20000, upgrade: 14000 },
-    rent: [4000, 8000, 20000],
+    rent: [4000, 12000, 28000],
   },
   {
     id: 40,
@@ -474,7 +485,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy:20000, upgrade: 14000 },
-    rent: [4000, 8000, 20000],
+    rent: [4000, 12000, 28000],
   },
   {
     id: 41,
@@ -485,7 +496,7 @@ const lands = [
     level: 0,
     buffed: 0,
     price: { buy:20000, upgrade: 14000 },
-    rent: [4000, 8000, 20000],
+    rent: [4000, 12000, 28000],
   },
   {
     id: 42,
@@ -524,12 +535,12 @@ const events = [
   {
     id: 5,
     title: "男同俱樂部",
-    description: "男隊輔被發現剽竊畫作，需要小隊員前往監獄贖人",
+    description: "男隊輔因為被發現剽竊畫作進監獄，小隊員可花20000贖回男隊輔",
   },
   {
     id: 6,
     title: "黑死病",
-    description: "各組消耗大量資源對付疾病，各組所有資源減少40%(四捨五入)",
+    description: "各組消耗大量資源對付疾病，各組物資減少40% (四捨五入)",
   },
   {
     id: 7,
@@ -540,7 +551,7 @@ const events = [
   {
     id: 8,
     title: "魔法失效",
-    description: "遊戲結束前無法使用卡片效果，同時EE幣又暴跌",
+    description: "遊戲結束前無法使用狗叫卡以外的技能卡，同時EE幣又暴跌",
   },
 ];
 
@@ -664,6 +675,7 @@ db.once("open", async () => {
   await Notification.deleteMany({});
   await Effect.deleteMany({});
   await Broadcast.deleteMany({});
+  await AccountingResult.deleteMany({});
   console.log("delete done");
 
   await Promise.all(users.map((user) => new User(user).save()));
