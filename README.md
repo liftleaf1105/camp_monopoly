@@ -1,6 +1,6 @@
 # 2026_camp
 
-This is the website of game "Monopoly" in NTUEE camp for freshman!
+This is the website of game "Monopoly" in NTUEE camp for high school student!
 
 2022: By rayray2002, jerry1249756 and hackhaha1\
 2023: By lin-1214\
@@ -21,17 +21,17 @@ MONGO_URL=mongodb+srv://<user>:<password>@<cluster>/?appName=<app>
 
 - Before any commits, add `backend/.env` into `.gitignore` to avoid pushing your own MongoDB connection string up to the origin and keep real credentials only in `backend/.env`.
 
-### Frontend
-```bash
-cd frontend
-yarn start
-```
-
 ### Backend
 ```bash
 cd backend
 yarn initdata
 yarn server
+```
+
+### Frontend
+```bash
+cd frontend
+yarn start
 ```
 
 ## Deployment
